@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lady Fresa · Team Goals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --passion:#FF1728;--grana:#A6182E;--sand:#672626;
+  --pink:#FD9CB3;--pink-light:#FFF0F4;
+  --blue:#A9D4DB;--blue-light:#EDF8FA;
+  --green:#053A0A;--green-light:#EAF3EA;
+  --gold:#C9900C;--gold-light:#FFF8E0;
+  --cream:#FFF8F8;--white:#FFFFFF;
+  --text:#1a1a1a;--text-m:#666;
+  --border:rgba(166,24,46,0.15);
+  --r:12px;--r-sm:8px;
+}
+html,body{height:100%;background:var(--cream);font-family:'Instrument Serif',Georgia,serif;color:var(--text);}
+.app{max-width:860px;margin:0 auto;}
+
+/* HEADER */
+.header{background:var(--passion);padding:0 1rem;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:50;}
+.logo{font-family:Impact,'Arial Black',sans-serif;font-size:20px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:1px;line-height:1;}
+.logo-sub{font-size:9px;font-family:'Instrument Serif',serif;color:rgba(255,255,255,.75);letter-spacing:3px;text-transform:uppercase;display:block;margin-top:1px;}
+.user-name{font-family:Impact,'Arial Black',sans-serif;font-size:13px;color:white;text-transform:uppercase;letter-spacing:.5px;}
+.user-lv{font-size:11px;font-style:italic;color:rgba(255,255,255,.75);}
+.btn-exit{font-family:'Instrument Serif',serif;font-size:11px;font-style:italic;padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.4);color:white;background:rgba(255,255,255,.15);cursor:pointer;margin-left:10px;}
+
+/* NAV */
+.nav{background:var(--grana);display:flex;position:sticky;top:58px;z-index:49;}
+.nav-btn{flex:1;padding:11px 6px;font-family:'Instrument Serif',serif;font-size:13px;font-style:italic;color:rgba(255,255,255,.65);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
+.nav-btn.active{color:white;border-bottom-color:var(--pink);}
+.nav-btn:hover:not(.active){color:rgba(255,255,255,.9);}
+
+/* CONTENT */
+.content{padding:1.25rem 1rem 4rem;min-height:calc(100vh - 116px);}
+
+/* TYPOGRAPHY */
+.sec-title{font-family:Impact,'Arial Black',sans-serif;font-size:20px;font-weight:900;color:var(--grana);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.sec-sub{font-size:13px;font-style:italic;color:var(--text-m);margin-bottom:1.25rem;}
+
+/* BRANCH TABS */
+.branch-row{display:flex;gap:8px;margin-bottom:1.25rem;}
+.branch-tab{flex:1;padding:9px;font-family:'Instrument Serif',serif;font-size:13px;font-style:italic;border:1px solid var(--border);border-radius:var(--r-sm);background:white;color:var(--text-m);cursor:pointer;transition:all .2s;text-align:center;}
+.branch-tab.active{background:var(--passion);color:white;border-color:var(--passion);}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:1.25rem;}
+.kpi{background:white;border:1px solid var(--border);border-radius:var(--r);padding:14px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--passion);}
+.kpi-icon{font-size:16px;margin-bottom:4px;}
+.kpi-label{font-size:11px;font-style:italic;color:var(--text-m);margin-bottom:3px;}
+.kpi-val{font-family:Impact,'Arial Black',sans-serif;font-size:22px;font-weight:900;color:var(--grana);line-height:1;}
+.kpi-sub{font-size:11px;font-style:italic;color:var(--text-m);margin-top:3px;}
+.kpi-bar{height:3px;background:#f0e0e3;border-radius:2px;margin-top:8px;}
+.kpi-fill{height:100%;border-radius:2px;background:var(--passion);transition:width .8s;}
+
+/* GOAL CARDS */
+.goals-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:1.5rem;}
+@media(max-width:520px){.goals-grid{grid-template-columns:1fr;}}
+.goal-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:15px;}
+.goal-card.done{border-color:var(--green);background:var(--green-light);}
+.goal-card.auto{border-left:3px solid var(--blue);}
+.gc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.gc-badge{font-size:11px;font-style:italic;padding:3px 9px;border-radius:20px;}
+.badge-done{background:var(--green);color:white;}
+.badge-prog{background:var(--pink-light);color:var(--grana);}
+.gc-name{font-family:Impact,'Arial Black',sans-serif;font-size:13px;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;}
+.gc-prog{font-size:12px;font-style:italic;color:var(--text-m);margin-bottom:5px;}
+.gc-bar{height:5px;background:#f0e0e3;border-radius:3px;overflow:hidden;}
+.gc-fill{height:100%;border-radius:3px;transition:width .8s;}
+.gc-xp{font-size:11px;font-style:italic;color:var(--gold);margin-top:7px;}
+.gc-reward{font-size:11px;font-style:italic;color:var(--text-m);margin-top:3px;}
+.sync-badge{display:inline-flex;align-items:center;gap:4px;background:var(--blue-light);color:#1a6a75;font-size:10px;font-style:italic;padding:2px 7px;border-radius:10px;margin-left:6px;}
+
+/* RANKING */
+.rank-list{display:flex;flex-direction:column;gap:10px;}
+.rank-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;display:flex;align-items:center;gap:12px;}
+.rank-card.r1{border-color:#D4AF37;background:#FFFDF0;}
+.rank-num{font-family:Impact,'Arial Black',sans-serif;font-size:20px;font-weight:900;min-width:28px;color:var(--text-m);}
+.rng{color:#D4AF37;}.rns{color:#999;}.rnb{color:#CD7F32;}
+.rank-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Impact,sans-serif;font-size:13px;font-weight:900;flex-shrink:0;}
+.rank-info{flex:1;}
+.rank-name{font-family:Impact,'Arial Black',sans-serif;font-size:14px;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:.3px;}
+.rank-meta{display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap;}
+.rank-role{font-size:12px;font-style:italic;color:var(--text-m);}
+.branch-tag{font-size:10px;font-style:italic;padding:2px 7px;border-radius:10px;}
+.tb{background:var(--pink-light);color:var(--grana);}
+.td{background:var(--blue-light);color:#1a6a75;}
+.rank-right{text-align:right;}
+.rank-xp{font-family:Impact,'Arial Black',sans-serif;font-size:20px;font-weight:900;color:var(--passion);}
+.rank-xplabel{font-size:11px;font-style:italic;color:var(--text-m);}
+.rank-lv{font-size:11px;font-style:italic;color:var(--grana);margin-top:2px;}
+.xp-bar{width:72px;height:3px;background:#f0e0e3;border-radius:2px;margin-top:4px;overflow:hidden;}
+.xp-bar-fill{height:100%;background:var(--passion);border-radius:2px;}
+
+/* BENEFITS */
+.ben-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
+.ben-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:15px;text-align:center;}
+.ben-card.unlocked{border-color:var(--green);}
+.ben-card.locked{opacity:.55;}
+.ben-icon{font-size:26px;margin-bottom:7px;}
+.ben-name{font-family:Impact,'Arial Black',sans-serif;font-size:12px;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;}
+.ben-desc{font-size:12px;font-style:italic;color:var(--text-m);}
+.ben-req{font-size:11px;font-style:italic;margin-top:8px;padding:3px 8px;border-radius:20px;display:inline-block;}
+.ben-req.done{background:var(--green);color:white;}
+.ben-req.pend{background:var(--pink-light);color:var(--grana);}
+
+/* LIMPIEZA */
+.score-display{background:white;border:1px solid var(--border);border-radius:var(--r);padding:1rem;text-align:center;margin-bottom:1rem;}
+.score-num{font-family:Impact,'Arial Black',sans-serif;font-size:40px;font-weight:900;line-height:1;}
+.score-label{font-size:13px;font-style:italic;color:var(--text-m);margin-top:4px;}
+.score-status{font-size:14px;font-style:italic;margin-top:6px;font-weight:bold;}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;}
+@media(max-width:400px){.check-grid{grid-template-columns:1fr;}}
+.check-item{display:flex;align-items:center;gap:10px;background:white;border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;cursor:pointer;transition:all .2s;}
+.check-item.checked{border-color:var(--green);background:var(--green-light);}
+.check-box{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all .2s;}
+.check-item.checked .check-box{background:var(--green);border-color:var(--green);color:white;}
+.check-label{font-size:13px;font-style:italic;color:var(--text);}
+
+/* ADMIN */
+.admin-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem;}
+.admin-title{font-family:Impact,'Arial Black',sans-serif;font-size:13px;font-weight:900;color:var(--grana);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;}
+.row-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.row-item:last-child{border-bottom:none;}
+.row-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Impact,sans-serif;font-size:12px;font-weight:900;flex-shrink:0;}
+.row-info{flex:1;}
+.row-name{font-family:Impact,'Arial Black',sans-serif;font-size:13px;font-weight:900;color:var(--text);text-transform:uppercase;}
+.row-meta{font-size:11px;font-style:italic;color:var(--text-m);}
+.prog-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);}
+.prog-row:last-child{border-bottom:none;}
+.prog-label{font-size:13px;font-style:italic;flex:1;color:var(--text);}
+.prog-input{width:80px;font-family:'Instrument Serif',serif;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--cream);text-align:center;color:var(--text);outline:none;}
+.prog-input:focus{border-color:var(--passion);}
+.prog-auto-val{font-family:Impact,'Arial Black',sans-serif;font-size:14px;color:var(--grana);min-width:80px;text-align:right;}
+
+/* FORMS */
+.flabel{font-size:12px;font-style:italic;color:var(--text-m);display:block;margin-bottom:4px;}
+.finput,.fselect{width:100%;font-family:'Instrument Serif',serif;font-size:13px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--cream);color:var(--text);outline:none;}
+.finput:focus,.fselect:focus{border-color:var(--passion);}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.frow.full{grid-template-columns:1fr;}
+@media(max-width:480px){.frow{grid-template-columns:1fr;}}
+
+/* BUTTONS */
+.btn{font-family:Impact,'Arial Black',sans-serif;font-size:12px;font-weight:900;text-transform:uppercase;padding:8px 16px;border-radius:var(--r-sm);border:none;cursor:pointer;transition:all .2s;}
+.btn-primary{background:var(--passion);color:white;}
+.btn-primary:hover{background:var(--grana);}
+.btn-ghost{background:transparent;color:var(--grana);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--pink-light);}
+.btn-danger{background:var(--pink-light);color:var(--grana);border:1px solid var(--pink);}
+.btn-sm{font-size:11px;padding:5px 10px;}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;background:var(--cream);}
+.login-logo{font-family:Impact,'Arial Black',sans-serif;font-size:44px;font-weight:900;color:var(--passion);text-transform:uppercase;line-height:.9;text-align:center;}
+.login-logo span{font-size:56px;display:block;}
+.login-sub{font-style:italic;font-size:13px;color:var(--text-m);text-align:center;margin-top:6px;margin-bottom:2rem;letter-spacing:2px;}
+.login-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;width:100%;max-width:340px;box-shadow:0 4px 24px rgba(166,24,46,.08);}
+.login-title{font-family:Impact,'Arial Black',sans-serif;font-size:14px;font-weight:900;color:var(--grana);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1rem;text-align:center;}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;}
+.profile-btn{padding:10px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:white;cursor:pointer;text-align:center;transition:all .2s;}
+.profile-btn:hover{border-color:var(--passion);background:var(--pink-light);}
+.profile-btn.selected{border-color:var(--passion);background:var(--passion);}
+.profile-btn.selected .pb-name,.profile-btn.selected .pb-role{color:white;}
+.pb-av{width:36px;height:36px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-family:Impact,sans-serif;font-size:12px;font-weight:900;}
+.pb-name{font-family:Impact,'Arial Black',sans-serif;font-size:12px;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:.3px;}
+.pb-role{font-size:11px;font-style:italic;color:var(--text-m);}
+.pin-inp{width:100%;text-align:center;font-family:Impact,'Arial Black',sans-serif;font-size:22px;letter-spacing:6px;padding:11px;border:1.5px solid var(--border);border-radius:var(--r-sm);outline:none;background:var(--cream);margin-bottom:10px;color:var(--text);}
+.pin-inp:focus{border-color:var(--passion);}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(103,38,38,.5);z-index:200;align-items:center;justify-content:center;padding:1rem;}
+.modal-bg.open{display:flex;}
+.modal{background:white;border-radius:var(--r);padding:1.5rem;width:100%;max-width:400px;border-top:4px solid var(--passion);max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:Impact,'Arial Black',sans-serif;font-size:16px;font-weight:900;color:var(--grana);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1rem;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--grana);color:white;padding:10px 20px;border-radius:var(--r-sm);font-style:italic;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap;max-width:90vw;text-align:center;}
+.toast.show{opacity:1;}
+
+.empty{text-align:center;padding:2rem;font-style:italic;font-size:13px;color:var(--text-m);}
+.loading-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;}
+.loading-logo{font-family:Impact,'Arial Black',sans-serif;font-size:44px;font-weight:900;color:var(--passion);text-transform:uppercase;line-height:.9;text-align:center;}
+.loading-logo span{font-size:56px;display:block;}
+.spinner{width:28px;height:28px;border:3px solid var(--pink);border-top-color:var(--passion);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<div id="root">
+  <div class="loading-screen">
+    <div class="loading-logo">LADY<span>FRESA</span></div>
+    <div class="spinner"></div>
+    <div style="font-style:italic;font-size:13px;color:var(--text-m);">Cargando equipo...</div>
+  </div>
+</div>
+
+<!-- Modal objetivo -->
+<div class="modal-bg" id="modal-goal">
+  <div class="modal">
+    <div class="modal-title">Nuevo objetivo</div>
+    <div class="frow"><div><label class="flabel">Sucursal</label><select class="fselect" id="g-suc"><option value="Balbuena">Balbuena</option><option value="Del Valle">Del Valle</option></select></div><div><label class="flabel">Categoría</label><select class="fselect" id="g-cat"><option value="ventas">💰 Ventas</option><option value="ticket">🧾 Ticket promedio</option><option value="upselling">⬆️ Upselling</option><option value="reseñas">⭐ Reseñas</option><option value="seguidores">📲 Seguidores</option><option value="contenido">🎬 Contenido</option><option value="limpieza">✨ Limpieza</option><option value="atencion">💬 Atención</option></select></div></div>
+    <div class="frow full"><div><label class="flabel">Nombre</label><input class="finput" id="g-name" placeholder="ej. Ventas semanales"/></div></div>
+    <div class="frow"><div><label class="flabel">Meta</label><input class="finput" id="g-target" type="number" placeholder="100"/></div><div><label class="flabel">Unidad</label><input class="finput" id="g-unit" placeholder="pedidos"/></div></div>
+    <div class="frow"><div><label class="flabel">XP al completar</label><input class="finput" id="g-xp" type="number" placeholder="100"/></div><div><label class="flabel">Recompensa</label><input class="finput" id="g-reward" placeholder="Día libre extra"/></div></div>
+    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-goal')">Cancelar</button><button class="btn btn-primary btn-sm" onclick="saveGoal()">Guardar</button></div>
+  </div>
+</div>
+
+<!-- Modal empleado -->
+<div class="modal-bg" id="modal-emp">
+  <div class="modal">
+    <div class="modal-title">Agregar empleado</div>
+    <div class="frow full"><div><label class="flabel">Nombre completo</label><input class="finput" id="e-name" placeholder="Nombre Apellido"/></div></div>
+    <div class="frow"><div><label class="flabel">Rol</label><select class="fselect" id="e-role"></select></div><div><label class="flabel">Sucursal</label><select class="fselect" id="e-suc"><option value="Balbuena">Balbuena</option><option value="Del Valle">Del Valle</option></select></div></div>
+    <div class="frow full"><div><label class="flabel">PIN (4 dígitos)</label><input class="finput" id="e-pin" type="password" maxlength="4" placeholder="0000"/></div></div>
+    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-emp')">Cancelar</button><button class="btn btn-primary btn-sm" onclick="saveEmp()">Agregar</button></div>
+  </div>
+</div>
+
+<!-- Modal rol -->
+<div class="modal-bg" id="modal-role">
+  <div class="modal">
+    <div class="modal-title">Nuevo rol</div>
+    <div class="frow full"><div><label class="flabel">Nombre del rol</label><input class="finput" id="r-name" placeholder="ej. Capitán Fresa"/></div></div>
+    <div class="frow"><div><label class="flabel">Edita objetivos</label><select class="fselect" id="r-goals"><option value="false">No</option><option value="true">Sí</option></select></div><div><label class="flabel">Edita empleados</label><select class="fselect" id="r-emps"><option value="false">No</option><option value="true">Sí</option></select></div></div>
+    <div class="frow full"><div><label class="flabel">Actualiza progreso</label><select class="fselect" id="r-prog"><option value="true">Sí</option><option value="false">No</option></select></div></div>
+    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-role')">Cancelar</button><button class="btn btn-primary btn-sm" onclick="saveRole()">Crear</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL='https://ngpumyxxxlafuzcsaepy.supabase.co';
+const SB_KEY='sb_publishable_6Kma0iIJ6mFCK1A7YTDnRw_HKqxsLQv';
+const AVCOLORS=['#FF1728','#A6182E','#053A0A','#A9D4DB','#672626','#D4537E','#1a6a75'];
+const CAT_ICON={ventas:'💰',ticket:'🧾',upselling:'⬆️',reseñas:'⭐',seguidores:'📲',contenido:'🎬',limpieza:'✨',atencion:'💬'};
+const AUTO_CATS=['ticket'];
+
+let S={
+  loggedIn:false,user:null,tab:'dashboard',branch:'Balbuena',
+  employees:[],roles:[],goals:[],benefits:[],
+  posData:{ticket:{}},
+  limpieza:{piso:false,barra:false,refrigerador:false,bano:false,presentacion_area:false,nota:''},
+  limpiezaHoy:null,selectedEmp:null,
+};
+
+async function api(table,params='',method='GET',body=null){
+  const headers={apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`,Accept:'application/json','Content-Type':'application/json'};
+  if(method==='POST')headers['Prefer']='return=representation';
+  if(method==='PATCH')headers['Prefer']='return=minimal';
+  const opts={method,headers};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch(`${SB_URL}/rest/v1/${table}?${params}`,opts);
+  if(method==='GET'||method==='POST'){try{return await r.json();}catch(e){return[];}}
+  return r;
+}
+
+async function loadAll(){
+  try{
+    const [emps,roles,goals,benefits]=await Promise.all([
+      api('lf_employees','select=*,lf_roles(*)&active=eq.true&order=xp.desc'),
+      api('lf_roles','select=*&order=name'),
+      api('lf_goals','select=*&active=eq.true&order=created_at'),
+      api('lf_benefits','select=*&active=eq.true&order=xp_required'),
+    ]);
+    S.employees=Array.isArray(emps)?emps:[];
+    S.roles=Array.isArray(roles)?roles:[];
+    S.goals=Array.isArray(goals)?goals:[];
+    S.benefits=Array.isArray(benefits)?benefits:[];
+    await loadPOSData();
+  }catch(e){console.error('loadAll error:',e);}
+}
+
+async function loadPOSData(){
+  try{
+    const tp=await api('lf_ticket_promedio','select=*');
+    if(Array.isArray(tp)){
+      tp.forEach(r=>{
+        S.posData.ticket[r.sucursal]={avg:parseInt(r.ticket_promedio)||0,total:parseInt(r.total_pedidos)||0};
+      });
+    }
+  }catch(e){console.error('POS data error:',e);}
+}
+
+async function loadLimpiezaHoy(){
+  try{
+    const today=new Date().toISOString().split('T')[0];
+    const res=await api('lf_limpieza',`select=*&sucursal=eq.${encodeURIComponent(S.branch)}&fecha=eq.${today}&limit=1`);
+    S.limpiezaHoy=Array.isArray(res)&&res.length>0?res[0]:null;
+    if(S.limpiezaHoy){
+      S.limpieza={
+        piso:S.limpiezaHoy.piso,barra:S.limpiezaHoy.barra,
+        refrigerador:S.limpiezaHoy.refrigerador,bano:S.limpiezaHoy.bano,
+        presentacion_area:S.limpiezaHoy.presentacion_area,nota:S.limpiezaHoy.nota||''
+      };
+    }
+  }catch(e){}
+}
+
+function getLevel(xp){
+  if(xp<300)return{l:1,name:'Fresita 🍓',next:300};
+  if(xp<700)return{l:2,name:'Fresca 🍓🍓',next:700};
+  if(xp<1200)return{l:3,name:'Fresa Premium 🍓🍓🍓',next:1200};
+  if(xp<2000)return{l:4,name:'Master Fresa 👑',next:2000};
+  return{l:5,name:'Lady Fresa 👑🍓',next:2000};
+}
+function getInitials(n){return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
+function pct(c,t){return t>0?Math.min(100,Math.round(c/t*100)):0;}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function getUserRole(){return S.roles.find(r=>r.id===S.user?.role_id)||{};}
+
+function render(){
+  document.getElementById('root').innerHTML=S.loggedIn?renderApp():renderLogin();
+}
+
+function renderLogin(){
+  return`<div class="login-wrap">
+    <div class="login-logo">LADY<span>FRESA</span></div>
+    <div class="login-sub">Est. 2025 · Team Goals</div>
+    ${S.employees.length===0
+      ?`<div style="font-style:italic;font-size:13px;color:var(--text-m);">Cargando equipo...</div>`
+      :`<div class="login-card">
+        <div class="login-title">¿Quién eres?</div>
+        <div class="profile-grid">
+          ${S.employees.map(e=>`
+            <div class="profile-btn${S.selectedEmp===e.id?' selected':''}" onclick="selectEmp('${e.id}')">
+              <div class="pb-av" style="background:${AVCOLORS[e.avatar_index%AVCOLORS.length]}22;color:${AVCOLORS[e.avatar_index%AVCOLORS.length]};">${getInitials(e.name)}</div>
+              <div class="pb-name">${e.name.split(' ')[0]}</div>
+              <div class="pb-role">${e.lf_roles?.name||'Fresero'}</div>
+            </div>`).join('')}
+        </div>
+        ${S.selectedEmp
+          ?`<input class="pin-inp" id="pin-inp" type="password" maxlength="4" placeholder="····" onkeyup="if(this.value.length===4)doLogin()"/>
+            <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">Entrar</button>`
+          :`<div class="empty" style="padding:.5rem 0;">Selecciona tu perfil</div>`}
+      </div>`}
+  </div>`;
+}
+
+function selectEmp(id){
+  S.selectedEmp=id;
+  render();
+  setTimeout(()=>document.getElementById('pin-inp')?.focus(),50);
+}
+
+function doLogin(){
+  const emp=S.employees.find(e=>e.id===S.selectedEmp);
+  const pin=document.getElementById('pin-inp')?.value||'';
+  if(!emp)return;
+  if(pin===emp.pin){
+    S.loggedIn=true;S.user=emp;
+    loadLimpiezaHoy().then(()=>{
+      showToast('¡Bienvenid@, '+emp.name.split(' ')[0]+'! 🍓');
+      render();
+    });
+  }else{
+    showToast('PIN incorrecto ✗');
+    document.getElementById('pin-inp').value='';
+  }
+}
+
+function renderApp(){
+  const role=getUserRole();
+  const lv=getLevel(S.user.xp);
+  const tabs=[
+    {id:'dashboard',label:'Dashboard'},
+    {id:'ranking',label:'Ranking'},
+    {id:'benefits',label:'Beneficios'},
+    {id:'limpieza',label:'Limpieza'},
+  ];
+  if(role.can_update_progress||role.can_edit_goals)tabs.push({id:'admin',label:'Admin'});
+  return`<div class="app">
+    <div class="header">
+      <div><div class="logo">Lady Fresa<span class="logo-sub">Team Goals · Est. 2025</span></div></div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="text-align:right;">
+          <div class="user-name">${S.user.name.split(' ')[0]}</div>
+          <div class="user-lv">${lv.name} · ${S.user.xp} XP</div>
+        </div>
+        <button class="btn-exit" onclick="logout()">Salir</button>
+      </div>
+    </div>
+    <div class="nav">${tabs.map(t=>`<button class="nav-btn${S.tab===t.id?' active':''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('')}</div>
+    <div class="content">
+      ${S.tab==='dashboard'?renderDashboard():
+        S.tab==='ranking'?renderRanking():
+        S.tab==='benefits'?renderBenefits():
+        S.tab==='limpieza'?renderLimpieza():
+        renderAdmin()}
+    </div>
+  </div>`;
+}
+
+function renderDashboard(){
+  const branchGoals=S.goals.filter(g=>g.sucursal===S.branch);
+  const posTicket=S.posData.ticket[S.branch]?.avg||0;
+  const goalsWithAuto=branchGoals.map(g=>g.category==='ticket'?{...g,current_value:posTicket}:g);
+  const done=goalsWithAuto.filter(g=>pct(g.current_value,g.target)>=100).length;
+  const avg=goalsWithAuto.length?Math.round(goalsWithAuto.reduce((a,g)=>a+pct(g.current_value,g.target),0)/goalsWithAuto.length):0;
+  const xpDisp=goalsWithAuto.filter(g=>pct(g.current_value,g.target)>=100).reduce((a,g)=>a+g.xp_reward,0);
+  return`
+    <div class="branch-row">
+      <button class="branch-tab${S.branch==='Balbuena'?' active':''}" onclick="setBranch('Balbuena')">Balbuena</button>
+      <button class="branch-tab${S.branch==='Del Valle'?' active':''}" onclick="setBranch('Del Valle')">Del Valle</button>
+    </div>
+    <div class="sec-title">${S.branch}</div>
+    <div class="sec-sub">Objetivos del periodo · ${new Date().toLocaleDateString('es-MX',{month:'long',year:'numeric'})}</div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-icon">🎯</div><div class="kpi-label">Objetivos cumplidos</div><div class="kpi-val">${done}/${goalsWithAuto.length}</div><div class="kpi-bar"><div class="kpi-fill" style="width:${goalsWithAuto.length?Math.round(done/goalsWithAuto.length*100):0}%;"></div></div></div>
+      <div class="kpi"><div class="kpi-icon">🧾</div><div class="kpi-label">Ticket promedio</div><div class="kpi-val">$${posTicket}</div><div class="kpi-sub">Meta: $240 MXN</div><div class="kpi-bar"><div class="kpi-fill" style="width:${Math.min(100,Math.round(posTicket/240*100))}%;background:#1a6a75;"></div></div></div>
+      <div class="kpi"><div class="kpi-icon">⚡</div><div class="kpi-label">XP ganado</div><div class="kpi-val">${xpDisp}</div><div class="kpi-bar"><div class="kpi-fill" style="width:${Math.min(100,Math.round(xpDisp/500*100))}%;background:var(--gold);"></div></div></div>
+    </div>
+    ${goalsWithAuto.length===0
+      ?`<div class="empty">Sin objetivos configurados.<br/>Agrega desde Admin.</div>`
+      :`<div class="goals-grid">${goalsWithAuto.map(g=>{
+          const p=pct(g.current_value,g.target);
+          const d=p>=100;
+          const isAuto=AUTO_CATS.includes(g.category);
+          const col=d?'#053A0A':p>=50?'var(--gold)':'var(--passion)';
+          return`<div class="goal-card${d?' done':''}${isAuto?' auto':''}">
+            <div class="gc-top">
+              <div><span style="font-size:18px;">${CAT_ICON[g.category]||'🎯'}</span>${isAuto?`<span class="sync-badge">POS live</span>`:''}</div>
+              <span class="gc-badge ${d?'badge-done':'badge-prog'}">${d?'✓ Logrado':p+'%'}</span>
+            </div>
+            <div class="gc-name">${g.name}</div>
+            <div class="gc-prog">${g.current_value} / ${g.target} ${g.unit}</div>
+            <div class="gc-bar"><div class="gc-fill" style="width:${p}%;background:${col};"></div></div>
+            <div class="gc-xp">⚡ +${g.xp_reward} XP al completar</div>
+            ${g.reward_text?`<div class="gc-reward">🎁 ${g.reward_text}</div>`:''}
+          </div>`;
+        }).join('')}</div>`}`;
+}
+
+function renderRanking(){
+  const sorted=[...S.employees].sort((a,b)=>b.xp-a.xp);
+  const rc=['rng','rns','rnb'];
+  return`
+    <div class="sec-title">Tabla de líderes</div>
+    <div class="sec-sub">XP acumulado · todas las sucursales</div>
+    <div class="rank-list">
+      ${sorted.map((e,i)=>{
+        const lv=getLevel(e.xp);
+        return`<div class="rank-card${i===0?' r1':''}">
+          <div class="rank-num ${rc[i]||''}">#${i+1}</div>
+          <div class="rank-av" style="background:${AVCOLORS[e.avatar_index%AVCOLORS.length]}22;color:${AVCOLORS[e.avatar_index%AVCOLORS.length]};">${getInitials(e.name)}</div>
+          <div class="rank-info">
+            <div class="rank-name">${e.name}</div>
+            <div class="rank-meta">
+              <span class="rank-role">${e.lf_roles?.name||'Fresero'}</span>
+              <span class="branch-tag ${e.sucursal==='Balbuena'?'tb':'td'}">${e.sucursal}</span>
+            </div>
+            <div class="rank-lv">${lv.name}</div>
+          </div>
+          <div class="rank-right">
+            <div class="rank-xp">${e.xp}</div>
+            <div class="rank-xplabel">XP total</div>
+            <div class="xp-bar"><div class="xp-bar-fill" style="width:${Math.min(100,Math.round((e.xp%(getLevel(e.xp).next||500))/getLevel(e.xp).next*100))}%;"></div></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function renderBenefits(){
+  const xp=S.user.xp;
+  return`
+    <div class="sec-title">Beneficios & recompensas</div>
+    <div class="sec-sub">Tu XP: ${xp} · Se desbloquean automáticamente</div>
+    <div class="ben-grid">
+      ${S.benefits.map(b=>{
+        const u=xp>=b.xp_required;
+        return`<div class="ben-card${u?' unlocked':' locked'}">
+          <div class="ben-icon">${b.icon}</div>
+          <div class="ben-name">${b.name}</div>
+          <div class="ben-desc">${b.description}</div>
+          <div class="ben-req ${u?'done':'pend'}">${u?'✓ Desbloqueado':b.xp_required+' XP'}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function renderLimpieza(){
+  const hoy=new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  const items=[
+    {key:'piso',label:'Piso limpio'},
+    {key:'barra',label:'Barra ordenada'},
+    {key:'refrigerador',label:'Refrigerador'},
+    {key:'bano',label:'Baño limpio'},
+    {key:'presentacion_area',label:'Presentación del área'},
+  ];
+  const score=items.filter(i=>S.limpieza[i.key]).length;
+  const aprobado=score>=4;
+  const yaGuardado=!!S.limpiezaHoy;
+  return`
+    <div class="sec-title">Checklist de limpieza</div>
+    <div class="sec-sub">${hoy} · ${S.branch}${yaGuardado?` <span style="background:var(--green);color:white;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;">✓ Guardado hoy</span>`:''}</div>
+    <div class="score-display">
+      <div class="score-num" style="color:${aprobado?'var(--green)':'var(--passion)'};">${score}/5</div>
+      <div class="score-label">puntos de limpieza</div>
+      <div class="score-status" style="color:${aprobado?'var(--green)':'var(--passion)'};">${aprobado?'✓ Turno aprobado':'✗ Mínimo 4 puntos'}</div>
+    </div>
+    <div class="check-grid">
+      ${items.map(item=>`
+        <div class="check-item${S.limpieza[item.key]?' checked':''}" onclick="${yaGuardado?'':'toggleCheck(\''+item.key+'\')'}">
+          <div class="check-box">${S.limpieza[item.key]?'✓':''}</div>
+          <span class="check-label">${item.label}</span>
+        </div>`).join('')}
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label class="flabel">Nota (opcional)</label>
+      <input class="finput" id="limpieza-nota" placeholder="ej. Se limpió el refrigerador a fondo" value="${S.limpieza.nota||''}" ${yaGuardado?'disabled':''}/>
+    </div>
+    ${!yaGuardado
+      ?`<button class="btn btn-primary" onclick="saveLimpieza()" style="${!aprobado?'background:var(--text-m);cursor:not-allowed;':''}">${aprobado?'Guardar checklist +50 XP':'Completa al menos 4 puntos'}</button>`
+      :`<button class="btn btn-ghost" disabled>Ya registrado hoy ✓</button>`}`;
+}
+
+function toggleCheck(key){
+  if(S.limpiezaHoy)return;
+  S.limpieza[key]=!S.limpieza[key];
+  render();
+}
+
+async function saveLimpieza(){
+  const score=Object.keys(S.limpieza).filter(k=>k!=='nota'&&S.limpieza[k]).length;
+  if(score<4){showToast('Completa al menos 4 puntos');return;}
+  S.limpieza.nota=document.getElementById('limpieza-nota')?.value||'';
+  try{
+    const body={sucursal:S.branch,employee_id:S.user.id,fecha:new Date().toISOString().split('T')[0],...S.limpieza};
+    await api('lf_limpieza','',('POST'),body);
+    const newXP=S.user.xp+50;
+    await api('lf_employees',`id=eq.${S.user.id}`,'PATCH',{xp:newXP});
+    S.user.xp=newXP;
+    const emp=S.employees.find(e=>e.id===S.user.id);
+    if(emp)emp.xp=newXP;
+    const goalLimpieza=S.goals.find(g=>g.category==='limpieza'&&g.sucursal===S.branch);
+    if(goalLimpieza){
+      const newVal=(goalLimpieza.current_value||0)+1;
+      await api('lf_goals',`id=eq.${goalLimpieza.id}`,'PATCH',{current_value:newVal});
+      goalLimpieza.current_value=newVal;
+    }
+    await loadLimpiezaHoy();
+    showToast('✨ Limpieza guardada +50 XP');
+    render();
+  }catch(e){showToast('Error al guardar');console.error(e);}
+}
+
+function renderAdmin(){
+  const role=getUserRole();
+  const branchGoals=S.goals.filter(g=>g.sucursal===S.branch);
+  const posTicket=S.posData.ticket[S.branch]?.avg||0;
+  return`
+    <div class="sec-title">Admin</div>
+    <div class="sec-sub">${role.can_edit_employees?'Gestión completa':'Solo actualizar progreso'}</div>
+    <div class="admin-card">
+      <div class="admin-title">Actualizar progreso
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm ${S.branch==='Balbuena'?'btn-primary':'btn-ghost'}" onclick="setBranch('Balbuena')">Balbuena</button>
+          <button class="btn btn-sm ${S.branch==='Del Valle'?'btn-primary':'btn-ghost'}" onclick="setBranch('Del Valle')">Del Valle</button>
+        </div>
+      </div>
+      ${branchGoals.filter(g=>!AUTO_CATS.includes(g.category)).map(g=>`
+        <div class="prog-row">
+          <span style="font-size:14px;margin-right:4px;">${CAT_ICON[g.category]||'🎯'}</span>
+          <span class="prog-label">${g.name} <span style="color:var(--text-m);font-size:11px;">(meta: ${g.target} ${g.unit})</span></span>
+          <input class="prog-input" id="prog-${g.id}" type="number" value="${g.current_value}" min="0"/>
+        </div>`).join('')||'<div class="empty" style="padding:.75rem 0;font-size:12px;">Sin objetivos manuales</div>'}
+      ${branchGoals.filter(g=>AUTO_CATS.includes(g.category)).map(g=>`
+        <div class="prog-row">
+          <span style="font-size:14px;margin-right:4px;">${CAT_ICON[g.category]||'🎯'}</span>
+          <span class="prog-label">${g.name} <span class="sync-badge">POS automático</span></span>
+          <span class="prog-auto-val">$${posTicket}</span>
+        </div>`).join('')}
+      <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="saveProgress()">Guardar progreso</button>
+    </div>
+    ${role.can_edit_goals?`
+    <div class="admin-card">
+      <div class="admin-title">Objetivos <button class="btn btn-primary btn-sm" onclick="openModal('modal-goal')">+ Nuevo</button></div>
+      ${S.goals.map(g=>`
+        <div class="row-item">
+          <span style="font-size:16px;">${CAT_ICON[g.category]||'🎯'}</span>
+          <div class="row-info">
+            <div class="row-name">${g.name} <span style="font-size:10px;font-style:italic;color:var(--text-m);font-family:'Instrument Serif',serif;text-transform:none;">${g.sucursal}</span></div>
+            <div class="row-meta">Meta: ${g.target} ${g.unit} · +${g.xp_reward} XP · ${pct(g.current_value,g.target)}%</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="deleteGoal('${g.id}')">✕</button>
+        </div>`).join('')||'<div class="empty">Sin objetivos</div>'}
+    </div>`:''}
+    ${role.can_edit_employees?`
+    <div class="admin-card">
+      <div class="admin-title">Empleados <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ Agregar</button></div>
+      ${S.employees.map(e=>`
+        <div class="row-item">
+          <div class="row-av" style="background:${AVCOLORS[e.avatar_index%AVCOLORS.length]}22;color:${AVCOLORS[e.avatar_index%AVCOLORS.length]};">${getInitials(e.name)}</div>
+          <div class="row-info">
+            <div class="row-name">${e.name}</div>
+            <div class="row-meta">${e.lf_roles?.name||'Fresero'} · ${e.sucursal} · ${e.xp} XP</div>
+          </div>
+          ${e.id!==S.user.id?`<button class="btn btn-danger btn-sm" onclick="deleteEmp('${e.id}')">✕</button>`:''}
+        </div>`).join('')}
+    </div>
+    <div class="admin-card">
+      <div class="admin-title">Roles <button class="btn btn-primary btn-sm" onclick="openModal('modal-role')">+ Nuevo rol</button></div>
+      ${S.roles.map(r=>`
+        <div class="row-item">
+          <div class="row-info">
+            <div class="row-name">${r.name}</div>
+            <div class="row-meta">${[r.can_edit_goals?'Edita objetivos':'',r.can_edit_employees?'Edita empleados':'',r.can_update_progress?'Actualiza progreso':''].filter(Boolean).join(' · ')||'Solo consulta'}</div>
+          </div>
+        </div>`).join('')}
+    </div>`:''}`;
+}
+
+function switchTab(t){S.tab=t;render();}
+function setBranch(b){S.branch=b;loadLimpiezaHoy().then(render);}
+function logout(){S.loggedIn=false;S.user=null;S.selectedEmp=null;S.limpiezaHoy=null;S.limpieza={piso:false,barra:false,refrigerador:false,bano:false,presentacion_area:false,nota:''};render();}
+
+async function saveProgress(){
+  const branchGoals=S.goals.filter(g=>g.sucursal===S.branch&&!AUTO_CATS.includes(g.category));
+  let changed=false;
+  for(const g of branchGoals){
+    const inp=document.getElementById('prog-'+g.id);
+    if(!inp)continue;
+    const newVal=parseFloat(inp.value)||0;
+    if(newVal===g.current_value)continue;
+    const was=pct(g.current_value,g.target)>=100;
+    await api('lf_goals',`id=eq.${g.id}`,'PATCH',{current_value:newVal});
+    g.current_value=newVal;
+    changed=true;
+    if(!was&&pct(newVal,g.target)>=100){
+      const newXP=S.user.xp+g.xp_reward;
+      await api('lf_employees',`id=eq.${S.user.id}`,'PATCH',{xp:newXP});
+      S.user.xp=newXP;
+      const emp=S.employees.find(e=>e.id===S.user.id);
+      if(emp)emp.xp=newXP;
+      showToast('🎉 "'+g.name+'" completado! +'+g.xp_reward+' XP');
+    }
+  }
+  if(changed)showToast('Progreso guardado ✓');
+  render();
+}
+
+async function saveGoal(){
+  const name=document.getElementById('g-name').value.trim();
+  const category=document.getElementById('g-cat').value;
+  const sucursal=document.getElementById('g-suc').value;
+  const target=parseFloat(document.getElementById('g-target').value)||0;
+  const unit=document.getElementById('g-unit').value.trim();
+  const xp=parseInt(document.getElementById('g-xp').value)||100;
+  const reward=document.getElementById('g-reward').value.trim();
+  if(!name||!target){showToast('Completa nombre y meta');return;}
+  const body={name,category,sucursal,target,current_value:0,unit,xp_reward:xp,reward_text:reward,auto_sync:AUTO_CATS.includes(category)};
+  const created=await api('lf_goals','select=*','POST',body);
+  if(Array.isArray(created)&&created[0])S.goals.push(created[0]);
+  closeModal('modal-goal');
+  showToast('Objetivo agregado ✓');
+  ['g-name','g-target','g-unit','g-reward'].forEach(i=>document.getElementById(i).value='');
+  render();
+}
+
+async function deleteGoal(id){
+  await api('lf_goals',`id=eq.${id}`,'PATCH',{active:false});
+  S.goals=S.goals.filter(g=>g.id!==id);
+  showToast('Objetivo eliminado');render();
+}
+
+function openAddEmpModal(){
+  const sel=document.getElementById('e-role');
+  if(sel)sel.innerHTML=S.roles.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
+  openModal('modal-emp');
+}
+
+async function saveEmp(){
+  const name=document.getElementById('e-name').value.trim();
+  const role_id=document.getElementById('e-role').value;
+  const sucursal=document.getElementById('e-suc').value;
+  const pin=document.getElementById('e-pin').value||'0000';
+  if(!name){showToast('Escribe el nombre');return;}
+  const body={name,role_id,sucursal,xp:0,pin,avatar_index:S.employees.length%AVCOLORS.length};
+  const created=await api('lf_employees','select=*,lf_roles(*)','POST',body);
+  if(Array.isArray(created)&&created[0])S.employees.push(created[0]);
+  closeModal('modal-emp');showToast('Empleado agregado ✓');
+  document.getElementById('e-name').value='';render();
+}
+
+async function deleteEmp(id){
+  await api('lf_employees',`id=eq.${id}`,'PATCH',{active:false});
+  S.employees=S.employees.filter(e=>e.id!==id);
+  showToast('Empleado eliminado');render();
+}
+
+async function saveRole(){
+  const name=document.getElementById('r-name').value.trim();
+  if(!name){showToast('Escribe el nombre');return;}
+  const body={name,can_edit_goals:document.getElementById('r-goals').value==='true',can_edit_employees:document.getElementById('r-emps').value==='true',can_update_progress:document.getElementById('r-prog').value==='true'};
+  const created=await api('lf_roles','select=*','POST',body);
+  if(Array.isArray(created)&&created[0])S.roles.push(created[0]);
+  closeModal('modal-role');showToast('Rol creado ✓');
+  document.getElementById('r-name').value='';render();
+}
+
+// Boot
+loadAll().then(render);
+</script>
+</body>
+</html>
