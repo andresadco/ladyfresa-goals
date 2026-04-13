@@ -215,14 +215,22 @@ html,body{height:100%;background:var(--cream);font-family:'Instrument Serif',Geo
   </div>
 </div>
 
-<!-- Modal empleado -->
+<!-- Modal empleado (agregar / editar) -->
 <div class="modal-bg" id="modal-emp">
   <div class="modal">
-    <div class="modal-title">Agregar empleado</div>
+    <div class="modal-title" id="modal-emp-title">Agregar empleado</div>
+    <input type="hidden" id="e-id"/>
     <div class="frow full"><div><label class="flabel">Nombre completo</label><input class="finput" id="e-name" placeholder="Nombre Apellido"/></div></div>
-    <div class="frow"><div><label class="flabel">Rol</label><select class="fselect" id="e-role"></select></div><div><label class="flabel">Sucursal</label><select class="fselect" id="e-suc"><option value="Balbuena">Balbuena</option><option value="Del Valle">Del Valle</option></select></div></div>
-    <div class="frow full"><div><label class="flabel">PIN (4 dígitos)</label><input class="finput" id="e-pin" type="password" maxlength="4" placeholder="0000"/></div></div>
-    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-emp')">Cancelar</button><button class="btn btn-primary btn-sm" onclick="saveEmp()">Agregar</button></div>
+    <div class="frow"><div><label class="flabel">Rol</label><select class="fselect" id="e-role"></select></div><div><label class="flabel">Sucursal</label><select class="fselect" id="e-suc"><option value="Balbuena">Balbuena</option><option value="Moctezuma">Moctezuma</option></select></div></div>
+    <div class="frow full"><div><label class="flabel">PIN (4 dígitos)</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="finput" id="e-pin" type="text" maxlength="4" placeholder="0000" style="letter-spacing:4px;font-size:16px;flex:1;"/>
+        <button class="btn btn-ghost btn-sm" onclick="generatePIN()" type="button">Generar</button>
+      </div>
+      <div id="pin-preview" style="font-family:'Instrument Serif',serif;font-size:12px;font-style:italic;color:var(--grana);margin-top:4px;"></div>
+    </div></div>
+    <div class="frow"><div><label class="flabel">XP actual</label><input class="finput" id="e-xp" type="number" placeholder="0" value="0"/></div></div>
+    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-emp')">Cancelar</button><button class="btn btn-primary btn-sm" id="modal-emp-btn" onclick="saveEmp()">Agregar</button></div>
   </div>
 </div>
 
@@ -606,9 +614,12 @@ function renderAdmin(){
           <div class="row-av" style="background:${AVCOLORS[e.avatar_index%AVCOLORS.length]}22;color:${AVCOLORS[e.avatar_index%AVCOLORS.length]};">${getInitials(e.name)}</div>
           <div class="row-info">
             <div class="row-name">${e.name}</div>
-            <div class="row-meta">${e.lf_roles?.name||'Fresero'} · ${e.sucursal} · ${e.xp} XP</div>
+            <div class="row-meta">${e.lf_roles?.name||'Fresero'} · ${e.sucursal} · ${e.xp} XP · PIN: ${e.pin}</div>
           </div>
-          ${e.id!==S.user.id?`<button class="btn btn-danger btn-sm" onclick="deleteEmp('${e.id}')">✕</button>`:''}
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="openEditEmpModal('${e.id}')">Editar</button>
+            ${e.id!==S.user.id?`<button class="btn btn-danger btn-sm" onclick="deleteEmp('${e.id}')">✕</button>`:''}
+          </div>
         </div>`).join('')}
     </div>
     <div class="admin-card">
@@ -676,9 +687,43 @@ async function deleteGoal(id){
   showToast('Objetivo eliminado');render();
 }
 
+function generatePIN(){
+  const pin=String(Math.floor(1000+Math.random()*9000));
+  const inp=document.getElementById('e-pin');
+  if(inp){inp.value=pin;inp.type='text';}
+  const prev=document.getElementById('pin-preview');
+  if(prev)prev.textContent='PIN generado: '+pin+' — anótalo antes de guardar';
+}
+
 function openAddEmpModal(){
   const sel=document.getElementById('e-role');
   if(sel)sel.innerHTML=S.roles.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
+  document.getElementById('modal-emp-title').textContent='Agregar empleado';
+  document.getElementById('modal-emp-btn').textContent='Agregar';
+  document.getElementById('modal-emp-btn').onclick=saveEmp;
+  document.getElementById('e-id').value='';
+  document.getElementById('e-name').value='';
+  document.getElementById('e-pin').value='';
+  document.getElementById('e-xp').value='0';
+  document.getElementById('pin-preview').textContent='';
+  openModal('modal-emp');
+}
+
+function openEditEmpModal(id){
+  const emp=S.employees.find(e=>e.id===id);
+  if(!emp)return;
+  const sel=document.getElementById('e-role');
+  if(sel)sel.innerHTML=S.roles.map(r=>`<option value="${r.id}"${r.id===emp.role_id?' selected':''}>${r.name}</option>`).join('');
+  document.getElementById('modal-emp-title').textContent='Editar empleado';
+  document.getElementById('modal-emp-btn').textContent='Guardar cambios';
+  document.getElementById('modal-emp-btn').onclick=updateEmp;
+  document.getElementById('e-id').value=emp.id;
+  document.getElementById('e-name').value=emp.name;
+  document.getElementById('e-pin').value=emp.pin;
+  document.getElementById('e-xp').value=emp.xp||0;
+  document.getElementById('pin-preview').textContent='';
+  const sucSel=document.getElementById('e-suc');
+  if(sucSel)sucSel.value=emp.sucursal;
   openModal('modal-emp');
 }
 
@@ -687,15 +732,37 @@ async function saveEmp(){
   const role_id=document.getElementById('e-role').value;
   const sucursal=document.getElementById('e-suc').value;
   const pin=document.getElementById('e-pin').value||'0000';
+  const xp=parseInt(document.getElementById('e-xp').value)||0;
   if(!name){showToast('Escribe el nombre');return;}
-  const body={name,role_id,sucursal,xp:0,pin,avatar_index:S.employees.length%AVCOLORS.length};
+  if(pin.length!==4||isNaN(pin)){showToast('El PIN debe ser 4 dígitos');return;}
+  const body={name,role_id,sucursal,xp,pin,avatar_index:S.employees.length%AVCOLORS.length};
   const created=await api('lf_employees','select=*,lf_roles(*)','POST',body);
   if(Array.isArray(created)&&created[0])S.employees.push(created[0]);
-  closeModal('modal-emp');showToast('Empleado agregado ✓');
-  document.getElementById('e-name').value='';render();
+  closeModal('modal-emp');showToast('Empleado agregado ✓');render();
+}
+
+async function updateEmp(){
+  const id=document.getElementById('e-id').value;
+  const name=document.getElementById('e-name').value.trim();
+  const role_id=document.getElementById('e-role').value;
+  const sucursal=document.getElementById('e-suc').value;
+  const pin=document.getElementById('e-pin').value||'0000';
+  const xp=parseInt(document.getElementById('e-xp').value)||0;
+  if(!name){showToast('Escribe el nombre');return;}
+  if(pin.length!==4||isNaN(pin)){showToast('El PIN debe ser 4 dígitos');return;}
+  await api('lf_employees',`id=eq.${id}`,'PATCH',{name,role_id,sucursal,pin,xp});
+  const emp=S.employees.find(e=>e.id===id);
+  if(emp){
+    emp.name=name;emp.role_id=role_id;emp.sucursal=sucursal;emp.pin=pin;emp.xp=xp;
+    const role=S.roles.find(r=>r.id===role_id);
+    if(role)emp.lf_roles=role;
+    if(id===S.user?.id){S.user.xp=xp;S.user.name=name;}
+  }
+  closeModal('modal-emp');showToast('Empleado actualizado ✓');render();
 }
 
 async function deleteEmp(id){
+  if(!confirm('¿Eliminar este empleado?'))return;
   await api('lf_employees',`id=eq.${id}`,'PATCH',{active:false});
   S.employees=S.employees.filter(e=>e.id!==id);
   showToast('Empleado eliminado');render();
