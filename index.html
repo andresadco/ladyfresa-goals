@@ -203,15 +203,17 @@ html,body{height:100%;background:var(--cream);font-family:'Instrument Serif',Geo
   </div>
 </div>
 
-<!-- Modal objetivo -->
+<!-- Modal objetivo (agregar / editar) -->
 <div class="modal-bg" id="modal-goal">
   <div class="modal">
-    <div class="modal-title">Nuevo objetivo</div>
-    <div class="frow"><div><label class="flabel">Sucursal</label><select class="fselect" id="g-suc"><option value="Balbuena">Balbuena</option><option value="Del Valle">Del Valle</option></select></div><div><label class="flabel">Categoría</label><select class="fselect" id="g-cat"><option value="ventas">💰 Ventas</option><option value="ticket">🧾 Ticket promedio</option><option value="upselling">⬆️ Upselling</option><option value="reseñas">⭐ Reseñas</option><option value="seguidores">📲 Seguidores</option><option value="contenido">🎬 Contenido</option><option value="limpieza">✨ Limpieza</option><option value="atencion">💬 Atención</option></select></div></div>
+    <div class="modal-title" id="modal-goal-title">Nuevo objetivo</div>
+    <input type="hidden" id="g-id"/>
+    <div class="frow"><div><label class="flabel">Sucursal</label><select class="fselect" id="g-suc"><option value="Balbuena">Balbuena</option><option value="Moctezuma">Moctezuma</option></select></div><div><label class="flabel">Categoría</label><select class="fselect" id="g-cat"><option value="ventas">💰 Ventas</option><option value="ticket">🧾 Ticket promedio</option><option value="upselling">⬆️ Upselling</option><option value="reseñas">⭐ Reseñas</option><option value="seguidores">📲 Seguidores</option><option value="contenido">🎬 Contenido</option><option value="limpieza">✨ Limpieza</option><option value="atencion">💬 Atención</option></select></div></div>
     <div class="frow full"><div><label class="flabel">Nombre</label><input class="finput" id="g-name" placeholder="ej. Ventas semanales"/></div></div>
     <div class="frow"><div><label class="flabel">Meta</label><input class="finput" id="g-target" type="number" placeholder="100"/></div><div><label class="flabel">Unidad</label><input class="finput" id="g-unit" placeholder="pedidos"/></div></div>
-    <div class="frow"><div><label class="flabel">XP al completar</label><input class="finput" id="g-xp" type="number" placeholder="100"/></div><div><label class="flabel">Recompensa</label><input class="finput" id="g-reward" placeholder="Día libre extra"/></div></div>
-    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-goal')">Cancelar</button><button class="btn btn-primary btn-sm" onclick="saveGoal()">Guardar</button></div>
+    <div class="frow"><div><label class="flabel">Progreso actual</label><input class="finput" id="g-current" type="number" placeholder="0"/></div><div><label class="flabel">XP al completar</label><input class="finput" id="g-xp" type="number" placeholder="100"/></div></div>
+    <div class="frow full"><div><label class="flabel">Recompensa</label><input class="finput" id="g-reward" placeholder="Día libre extra"/></div></div>
+    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-goal')">Cancelar</button><button class="btn btn-primary btn-sm" id="modal-goal-btn" onclick="saveGoal()">Guardar</button></div>
   </div>
 </div>
 
@@ -595,7 +597,7 @@ function renderAdmin(){
     </div>
     ${role.can_edit_goals?`
     <div class="admin-card">
-      <div class="admin-title">Objetivos <button class="btn btn-primary btn-sm" onclick="openModal('modal-goal')">+ Nuevo</button></div>
+      <div class="admin-title">Objetivos <button class="btn btn-primary btn-sm" onclick="openAddGoalModal()">+ Nuevo</button></div>
       ${S.goals.map(g=>`
         <div class="row-item">
           <span style="font-size:16px;">${CAT_ICON[g.category]||'🎯'}</span>
@@ -603,7 +605,10 @@ function renderAdmin(){
             <div class="row-name">${g.name} <span style="font-size:10px;font-style:italic;color:var(--text-m);font-family:'Instrument Serif',serif;text-transform:none;">${g.sucursal}</span></div>
             <div class="row-meta">Meta: ${g.target} ${g.unit} · +${g.xp_reward} XP · ${pct(g.current_value,g.target)}%</div>
           </div>
-          <button class="btn btn-danger btn-sm" onclick="deleteGoal('${g.id}')">✕</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="openEditGoalModal('${g.id}')">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteGoal('${g.id}')">✕</button>
+          </div>
         </div>`).join('')||'<div class="empty">Sin objetivos</div>'}
     </div>`:''}
     ${role.can_edit_employees?`
@@ -663,25 +668,74 @@ async function saveProgress(){
   render();
 }
 
+function openAddGoalModal(){
+  document.getElementById('modal-goal-title').textContent='Nuevo objetivo';
+  document.getElementById('modal-goal-btn').textContent='Guardar';
+  document.getElementById('modal-goal-btn').onclick=saveGoal;
+  document.getElementById('g-id').value='';
+  ['g-name','g-target','g-unit','g-reward'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('g-current').value='0';
+  document.getElementById('g-xp').value='100';
+  openModal('modal-goal');
+}
+
+function openEditGoalModal(id){
+  const g=S.goals.find(g=>g.id===id);
+  if(!g)return;
+  document.getElementById('modal-goal-title').textContent='Editar objetivo';
+  document.getElementById('modal-goal-btn').textContent='Guardar cambios';
+  document.getElementById('modal-goal-btn').onclick=updateGoal;
+  document.getElementById('g-id').value=g.id;
+  document.getElementById('g-name').value=g.name;
+  document.getElementById('g-suc').value=g.sucursal;
+  document.getElementById('g-cat').value=g.category;
+  document.getElementById('g-target').value=g.target;
+  document.getElementById('g-current').value=g.current_value||0;
+  document.getElementById('g-unit').value=g.unit;
+  document.getElementById('g-xp').value=g.xp_reward;
+  document.getElementById('g-reward').value=g.reward_text||'';
+  openModal('modal-goal');
+}
+
 async function saveGoal(){
   const name=document.getElementById('g-name').value.trim();
   const category=document.getElementById('g-cat').value;
   const sucursal=document.getElementById('g-suc').value;
   const target=parseFloat(document.getElementById('g-target').value)||0;
+  const current_value=parseFloat(document.getElementById('g-current').value)||0;
   const unit=document.getElementById('g-unit').value.trim();
   const xp=parseInt(document.getElementById('g-xp').value)||100;
   const reward=document.getElementById('g-reward').value.trim();
   if(!name||!target){showToast('Completa nombre y meta');return;}
-  const body={name,category,sucursal,target,current_value:0,unit,xp_reward:xp,reward_text:reward,auto_sync:AUTO_CATS.includes(category)};
+  const body={name,category,sucursal,target,current_value,unit,xp_reward:xp,reward_text:reward,auto_sync:AUTO_CATS.includes(category)};
   const created=await api('lf_goals','select=*','POST',body);
   if(Array.isArray(created)&&created[0])S.goals.push(created[0]);
   closeModal('modal-goal');
   showToast('Objetivo agregado ✓');
-  ['g-name','g-target','g-unit','g-reward'].forEach(i=>document.getElementById(i).value='');
+  render();
+}
+
+async function updateGoal(){
+  const id=document.getElementById('g-id').value;
+  const name=document.getElementById('g-name').value.trim();
+  const category=document.getElementById('g-cat').value;
+  const sucursal=document.getElementById('g-suc').value;
+  const target=parseFloat(document.getElementById('g-target').value)||0;
+  const current_value=parseFloat(document.getElementById('g-current').value)||0;
+  const unit=document.getElementById('g-unit').value.trim();
+  const xp=parseInt(document.getElementById('g-xp').value)||100;
+  const reward=document.getElementById('g-reward').value.trim();
+  if(!name||!target){showToast('Completa nombre y meta');return;}
+  await api('lf_goals',`id=eq.${id}`,'PATCH',{name,category,sucursal,target,current_value,unit,xp_reward:xp,reward_text:reward,auto_sync:AUTO_CATS.includes(category)});
+  const g=S.goals.find(g=>g.id===id);
+  if(g){g.name=name;g.category=category;g.sucursal=sucursal;g.target=target;g.current_value=current_value;g.unit=unit;g.xp_reward=xp;g.reward_text=reward;}
+  closeModal('modal-goal');
+  showToast('Objetivo actualizado ✓');
   render();
 }
 
 async function deleteGoal(id){
+  if(!confirm('¿Eliminar este objetivo?'))return;
   await api('lf_goals',`id=eq.${id}`,'PATCH',{active:false});
   S.goals=S.goals.filter(g=>g.id!==id);
   showToast('Objetivo eliminado');render();
