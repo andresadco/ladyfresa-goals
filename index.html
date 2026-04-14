@@ -192,6 +192,43 @@ html,body{height:100%;background:var(--cream);font-family:'Instrument Serif',Geo
 .spinner{width:28px;height:28px;border:3px solid var(--pink);border-top-color:var(--passion);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* ADMIN TABS */
+.admin-nav{display:flex;gap:3px;background:var(--pink-light);padding:4px;border-radius:var(--r);margin-bottom:1.25rem;overflow-x:auto;}
+.admin-nav-btn{flex:1;min-width:70px;padding:8px 6px;font-family:'Instrument Serif',serif;font-size:12px;font-style:italic;color:var(--grana);border:none;background:none;cursor:pointer;border-radius:var(--r-sm);transition:all .2s;white-space:nowrap;text-align:center;}
+.admin-nav-btn.active{background:var(--grana);color:white;}
+.admin-nav-btn:hover:not(.active){background:rgba(166,24,46,.1);}
+
+/* REPORTE */
+.rep-header{background:var(--grana);border-radius:var(--r);padding:1.25rem 1.5rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;}
+.rep-title{font-family:Impact,'Arial Black',sans-serif;font-size:18px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:1px;}
+.rep-period{font-size:12px;font-style:italic;color:rgba(255,255,255,.75);margin-top:2px;}
+.rep-section{background:white;border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem;}
+.rep-section-title{font-family:Impact,'Arial Black',sans-serif;font-size:13px;font-weight:900;color:var(--grana);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1rem;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.rep-kpi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:.5rem;}
+.rep-kpi{background:var(--cream);border-radius:var(--r-sm);padding:12px;text-align:center;}
+.rep-kpi-val{font-family:Impact,'Arial Black',sans-serif;font-size:24px;font-weight:900;color:var(--grana);line-height:1;}
+.rep-kpi-label{font-size:11px;font-style:italic;color:var(--text-m);margin-top:3px;}
+.rep-kpi-sub{font-size:10px;color:var(--text-m);margin-top:2px;}
+.rep-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.rep-bar-label{font-size:12px;font-style:italic;color:var(--text);min-width:90px;}
+.rep-bar-wrap{flex:1;height:8px;background:#f0e0e3;border-radius:4px;overflow:hidden;}
+.rep-bar-fill{height:100%;border-radius:4px;transition:width .8s;}
+.rep-bar-pct{font-family:Impact,'Arial Black',sans-serif;font-size:12px;color:var(--grana);min-width:36px;text-align:right;}
+.rep-emp-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.rep-emp-row:last-child{border-bottom:none;}
+.rep-emp-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Impact,sans-serif;font-size:11px;font-weight:900;flex-shrink:0;}
+.rep-emp-name{flex:1;font-family:Impact,'Arial Black',sans-serif;font-size:13px;color:var(--text);text-transform:uppercase;}
+.rep-emp-xp{font-family:Impact,'Arial Black',sans-serif;font-size:14px;color:var(--passion);}
+.rep-goal-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
+.rep-goal-row:last-child{border-bottom:none;}
+.rep-goal-name{flex:1;font-size:13px;font-style:italic;color:var(--text);}
+.rep-goal-pct{font-family:Impact,'Arial Black',sans-serif;font-size:13px;min-width:40px;text-align:right;}
+@media print{
+  .header,.nav,.btn-print{display:none!important;}
+  .content{padding:0!important;}
+  .rep-section{break-inside:avoid;}
+}
+
 /* PERFIL */
 .perfil-hero{background:var(--grana);border-radius:var(--r);padding:1.5rem;margin-bottom:1rem;display:flex;align-items:center;gap:16px;}
 .perfil-av{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Impact,'Arial Black',sans-serif;font-size:22px;font-weight:900;flex-shrink:0;border:3px solid rgba(255,255,255,.3);}
@@ -409,7 +446,7 @@ let S={
   loggedIn:false,user:null,tab:'dashboard',branch:'Balbuena',
   employees:[],roles:[],goals:[],benefits:[],ventasConfig:{},sucursales:[],
   posData:{ticket:{},ventasHoy:{},ventasMes:{}},
-  sugerencias:[],
+  sugerencias:[],adminTab:'progreso',
   limpieza:{piso:false,barra:false,refrigerador:false,bano:false,presentacion_area:false,nota:''},
   limpiezaHoy:null,selectedEmp:null,
 };
@@ -572,6 +609,7 @@ function renderApp(){
   ];
   if(role.can_update_progress||role.can_edit_goals){
     tabs.push({id:'liga',label:'Liga'});
+    tabs.push({id:'reporte',label:'Reporte'});
     tabs.push({id:'admin',label:'Admin'});
   }
   return`<div class="app">
@@ -594,6 +632,7 @@ function renderApp(){
         S.tab==='liga'?renderLiga():
         S.tab==='sugerencias'?renderSugerencias():
         S.tab==='perfil'?renderPerfil():
+        S.tab==='reporte'?renderReporte():
         renderAdmin()}
     </div>
   </div>`;
@@ -847,113 +886,151 @@ async function saveLimpieza(){
   }catch(e){showToast('Error al guardar');console.error(e);}
 }
 
+function setAdminTab(t){S.adminTab=t;render();}
+
 function renderAdmin(){
   const role=getUserRole();
+  const tabs=[
+    {id:'progreso',label:'📊 Progreso'},
+    {id:'objetivos',label:'🎯 Objetivos'},
+    {id:'equipo',label:'👥 Equipo'},
+    {id:'config',label:'⚙️ Config'},
+  ];
+
   const branchGoals=S.goals.filter(g=>g.sucursal===S.branch);
-  const posTicket=S.posData.ticket[S.branch]?.avg||0;
+  const posTicket=S.posData.ventasMes[S.branch]?.ticket||0;
+
   return`
     <div class="sec-title">Admin</div>
-    <div class="sec-sub">${role.can_edit_employees?'Gestión completa':'Solo actualizar progreso'}</div>
-    <div class="admin-card">
-      <div class="admin-title">Actualizar progreso
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-sm ${S.branch==='Balbuena'?'btn-primary':'btn-ghost'}" onclick="setBranch('Balbuena')">Balbuena</button>
-          <button class="btn btn-sm ${S.branch==='Del Valle'?'btn-primary':'btn-ghost'}" onclick="setBranch('Del Valle')">Del Valle</button>
-        </div>
-      </div>
-      ${branchGoals.filter(g=>!AUTO_CATS.includes(g.category)).map(g=>`
-        <div class="prog-row">
-          <span style="font-size:14px;margin-right:4px;">${CAT_ICON[g.category]||'🎯'}</span>
-          <span class="prog-label">${g.name} <span style="color:var(--text-m);font-size:11px;">(meta: ${g.target} ${g.unit})</span></span>
-          <input class="prog-input" id="prog-${g.id}" type="number" value="${g.current_value}" min="0"/>
-        </div>`).join('')||'<div class="empty" style="padding:.75rem 0;font-size:12px;">Sin objetivos manuales</div>'}
-      ${branchGoals.filter(g=>AUTO_CATS.includes(g.category)).map(g=>`
-        <div class="prog-row">
-          <span style="font-size:14px;margin-right:4px;">${CAT_ICON[g.category]||'🎯'}</span>
-          <span class="prog-label">${g.name} <span class="sync-badge">POS automático</span></span>
-          <span class="prog-auto-val">$${posTicket}</span>
-        </div>`).join('')}
-      <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="saveProgress()">Guardar progreso</button>
-    </div>
-    ${role.can_edit_goals?`
-    <div class="admin-card">
-      <div class="admin-title">Objetivos <button class="btn btn-primary btn-sm" onclick="openAddGoalModal()">+ Nuevo</button></div>
-      ${S.goals.map(g=>`
-        <div class="row-item">
-          <span style="font-size:16px;">${CAT_ICON[g.category]||'🎯'}</span>
-          <div class="row-info">
-            <div class="row-name">${g.name} <span style="font-size:10px;font-style:italic;color:var(--text-m);font-family:'Instrument Serif',serif;text-transform:none;">${g.sucursal}</span></div>
-            <div class="row-meta">Meta: ${g.target} ${g.unit} · +${g.xp_reward} XP · ${pct(g.current_value,g.target)}%</div>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost btn-sm" onclick="openEditGoalModal('${g.id}')">Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteGoal('${g.id}')">✕</button>
-          </div>
-        </div>`).join('')||'<div class="empty">Sin objetivos</div>'}
-    </div>`:''}
-    ${role.can_edit_employees?`
-    <div class="admin-card">
-      <div class="admin-title">Metas de ventas por tienda</div>
-      ${S.sucursales.map(s=>{
-        const b=s.name;
-        const cfg=S.ventasConfig[b]||{meta_lunes_jueves:10000,meta_viernes_domingo:14000};
-        return`<div style="padding:10px 0;border-bottom:1px solid var(--border);">
-          <div style="font-family:Impact,'Arial Black',sans-serif;font-size:13px;color:var(--grana);text-transform:uppercase;margin-bottom:8px;">${b}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div><label class="flabel">Lun–Jue</label><input class="finput" id="vcfg-lj-${b}" type="number" value="${cfg.meta_lunes_jueves}"/></div>
-            <div><label class="flabel">Vie–Dom</label><input class="finput" id="vcfg-fds-${b}" type="number" value="${cfg.meta_viernes_domingo}"/></div>
-          </div>
-          <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="saveVentasConfig('${b}')">Guardar ${b}</button>
-        </div>`;
-      }).join('')}
-    </div>
-    <div class="admin-card">
-      <div class="admin-title">Empleados <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ Agregar</button></div>
-      ${S.employees.map(e=>`
-        <div class="row-item">
-          <div class="row-av" style="background:${AVCOLORS[e.avatar_index%AVCOLORS.length]}22;color:${AVCOLORS[e.avatar_index%AVCOLORS.length]};">${getInitials(e.name)}</div>
-          <div class="row-info">
-            <div class="row-name">${e.name}</div>
-            <div class="row-meta">${e.lf_roles?.name||'Fresero'} · ${e.sucursal} · ${e.xp} XP · PIN: ${e.pin}</div>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost btn-sm" onclick="openEditEmpModal('${e.id}')">Editar</button>
-            ${e.id!==S.user.id?`<button class="btn btn-danger btn-sm" onclick="deleteEmp('${e.id}')">✕</button>`:''}
-          </div>
-        </div>`).join('')}
-    </div>
-    <div class="admin-card">
-      <div class="admin-title">Roles <button class="btn btn-primary btn-sm" onclick="openModal('modal-role')">+ Nuevo rol</button></div>
-      ${S.roles.map(r=>`
-        <div class="row-item">
-          <div class="row-info">
-            <div class="row-name">${r.name}</div>
-            <div class="row-meta">${[r.can_edit_goals?'Edita objetivos':'',r.can_edit_employees?'Edita empleados':'',r.can_update_progress?'Actualiza progreso':''].filter(Boolean).join(' · ')||'Solo consulta'}</div>
-          </div>
-        </div>`).join('')}
+    <div class="admin-nav">
+      ${tabs.map(t=>`<button class="admin-nav-btn${S.adminTab===t.id?' active':''}" onclick="setAdminTab('${t.id}')">${t.label}</button>`).join('')}
     </div>
 
-    <div class="admin-card">
-      <div class="admin-title">Beneficios <button class="btn btn-primary btn-sm" onclick="openAddBenefitModal()">+ Nuevo</button></div>
-      ${S.benefits.map(b=>`
-        <div class="row-item">
-          <span style="font-size:20px;min-width:28px;">${b.icon}</span>
-          <div class="row-info">
-            <div class="row-name">${b.name}</div>
-            <div class="row-meta">${b.description} · ${b.xp_required} XP</div>
+    ${S.adminTab==='progreso'?`
+      <div class="admin-card">
+        <div class="admin-title">Actualizar progreso
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${S.sucursales.map(s=>`<button class="btn btn-sm ${S.branch===s.name?'btn-primary':'btn-ghost'}" onclick="setBranch('${s.name}')">${s.name}</button>`).join('')}
           </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost btn-sm" onclick="openEditBenefitModal('${b.id}')">Editar</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteBenefit('${b.id}')">✕</button>
+        </div>
+        ${branchGoals.filter(g=>!AUTO_CATS.includes(g.category)).map(g=>`
+          <div class="prog-row">
+            <span style="font-size:14px;margin-right:4px;">${CAT_ICON[g.category]||'🎯'}</span>
+            <span class="prog-label">${g.name} <span style="color:var(--text-m);font-size:11px;">(meta: ${g.target} ${g.unit})</span></span>
+            <input class="prog-input" id="prog-${g.id}" type="number" value="${g.current_value}" min="0"/>
+          </div>`).join('')||'<div class="empty" style="padding:.75rem 0;font-size:12px;">Sin objetivos manuales</div>'}
+        ${branchGoals.filter(g=>AUTO_CATS.includes(g.category)).map(g=>`
+          <div class="prog-row">
+            <span style="font-size:14px;margin-right:4px;">${CAT_ICON[g.category]||'🎯'}</span>
+            <span class="prog-label">${g.name} <span class="sync-badge">POS automático</span></span>
+            <span class="prog-auto-val">$${posTicket}</span>
+          </div>`).join('')}
+        <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="saveProgress()">Guardar progreso</button>
+      </div>
+    `:''}
+
+    ${S.adminTab==='objetivos'?`
+      <div class="admin-card">
+        <div class="admin-title">
+          <span>Objetivos</span>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            ${S.sucursales.map(s=>`<button class="btn btn-sm ${S.branch===s.name?'btn-primary':'btn-ghost'}" onclick="setBranch('${s.name}')">${s.name}</button>`).join('')}
+            ${role.can_edit_goals?`<button class="btn btn-primary btn-sm" onclick="openAddGoalModal()">+ Nuevo</button>`:''}
           </div>
-        </div>`).join('')||'<div class="empty">Sin beneficios</div>'}
-    </div>`:''}`;
-}
+        </div>
+        ${S.goals.filter(g=>g.sucursal===S.branch).map(g=>`
+          <div class="row-item">
+            <span style="font-size:16px;">${CAT_ICON[g.category]||'🎯'}</span>
+            <div class="row-info">
+              <div class="row-name">${g.name}</div>
+              <div class="row-meta">Meta: ${g.target} ${g.unit} · +${g.xp_reward} XP · ${pct(g.current_value,g.target)}%</div>
+            </div>
+            ${role.can_edit_goals?`<div style="display:flex;gap:6px;">
+              <button class="btn btn-ghost btn-sm" onclick="openEditGoalModal('${g.id}')">Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteGoal('${g.id}')">✕</button>
+            </div>`:''}
+          </div>`).join('')||'<div class="empty">Sin objetivos para esta sucursal</div>'}
+      </div>
+    `:''}
+
+    ${S.adminTab==='equipo'&&role.can_edit_employees?`
+      <div class="admin-card">
+        <div class="admin-title">Empleados <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ Agregar</button></div>
+        ${S.employees.map(e=>`
+          <div class="row-item">
+            <div class="row-av" style="background:${AVCOLORS[e.avatar_index%AVCOLORS.length]}22;color:${AVCOLORS[e.avatar_index%AVCOLORS.length]};">${getInitials(e.name)}</div>
+            <div class="row-info">
+              <div class="row-name">${e.name}</div>
+              <div class="row-meta">${e.lf_roles?.name||'Fresero'} · ${e.sucursal} · ${e.xp} XP · PIN: ${e.pin}</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-ghost btn-sm" onclick="openEditEmpModal('${e.id}')">Editar</button>
+              ${e.id!==S.user.id?`<button class="btn btn-danger btn-sm" onclick="deleteEmp('${e.id}')">✕</button>`:''}
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-title">Roles <button class="btn btn-primary btn-sm" onclick="openModal('modal-role')">+ Nuevo rol</button></div>
+        ${S.roles.map(r=>`
+          <div class="row-item">
+            <div class="row-info">
+              <div class="row-name">${r.name}</div>
+              <div class="row-meta">${[r.can_edit_goals?'Edita objetivos':'',r.can_edit_employees?'Edita empleados':'',r.can_update_progress?'Actualiza progreso':''].filter(Boolean).join(' · ')||'Solo consulta'}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    `:''}
+
+    ${S.adminTab==='config'&&role.can_edit_employees?`
+      <div class="admin-card">
+        <div class="admin-title">Metas de ventas por tienda</div>
+        ${S.sucursales.map(s=>{
+          const b=s.name;
+          const cfg=S.ventasConfig[b]||{meta_lunes_jueves:10000,meta_viernes_domingo:14000};
+          return`<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="font-family:Impact,'Arial Black',sans-serif;font-size:13px;color:var(--grana);text-transform:uppercase;margin-bottom:8px;">${b}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div><label class="flabel">Lun–Jue</label><input class="finput" id="vcfg-lj-${b}" type="number" value="${cfg.meta_lunes_jueves}"/></div>
+              <div><label class="flabel">Vie–Dom</label><input class="finput" id="vcfg-fds-${b}" type="number" value="${cfg.meta_viernes_domingo}"/></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="saveVentasConfig('${b}')">Guardar ${b}</button>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-title">Beneficios <button class="btn btn-primary btn-sm" onclick="openAddBenefitModal()">+ Nuevo</button></div>
+        ${S.benefits.map(b=>`
+          <div class="row-item">
+            <span style="font-size:20px;min-width:28px;">${b.icon}</span>
+            <div class="row-info">
+              <div class="row-name">${b.name}</div>
+              <div class="row-meta">${b.description} · ${b.xp_required} XP</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-ghost btn-sm" onclick="openEditBenefitModal('${b.id}')">Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteBenefit('${b.id}')">✕</button>
+            </div>
+          </div>`).join('')||'<div class="empty">Sin beneficios</div>'}
+      </div>
+    `:''}
+
+    ${S.adminTab==='equipo'&&!role.can_edit_employees?`
+      <div class="empty">No tienes permiso para gestionar el equipo.</div>
+    `:''}
+
+    ${S.adminTab==='config'&&!role.can_edit_employees?`
+      <div class="empty">No tienes permiso para acceder a la configuración.</div>
+    `:''}
+  `;}
+
 
 function switchTab(t){
   S.tab=t;
-  if(t==='perfil'){renderPerfil();}
-  else{render();}
+  if(t==='perfil')renderPerfil();
+  else if(t==='reporte')renderReporte();
+  else render();
 }
 function setBranch(b){S.branch=b;loadLimpiezaHoy().then(render);}
 function logout(){S.loggedIn=false;S.user=null;S.selectedEmp=null;S.limpiezaHoy=null;S.limpieza={piso:false,barra:false,refrigerador:false,bano:false,presentacion_area:false,nota:''};render();}
@@ -1232,7 +1309,7 @@ async function renderPerfil(){
       {id:'benefits',label:'Beneficios'},
       {id:'limpieza',label:'Limpieza'},
       {id:'sugerencias',label:'Ideas 💡'},
-      ...(role.can_update_progress||role.can_edit_goals?[{id:'liga',label:'Liga'},{id:'admin',label:'Admin'}]:[])
+      ...(role.can_update_progress||role.can_edit_goals?[{id:'liga',label:'Liga'},{id:'reporte',label:'Reporte'},{id:'admin',label:'Admin'}]:[])
     ].map(t=>`<button class="nav-btn${S.tab===t.id?' active':''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('')}</div>
     <div class="content">
 
@@ -1293,6 +1370,144 @@ async function renderPerfil(){
       </div>`:''}
 
     </div>
+  </div>`;
+}
+
+async function renderReporte(){
+  const now=new Date();
+  const mesNombre=now.toLocaleDateString('es-MX',{month:'long',year:'numeric'});
+  const role=getUserRole();
+
+  // get limpieza data for month
+  const primerDia=new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];
+  let limpiezaData=[];
+  try{
+    const res=await api('lf_limpieza',`select=sucursal,aprobado,fecha&fecha=gte.${primerDia}&order=fecha`);
+    limpiezaData=Array.isArray(res)?res:[];
+  }catch(e){}
+
+  const branches=S.sucursales.map(s=>s.name);
+
+  // build report HTML
+  const reportHTML=`
+    <div class="rep-header" id="rep-top">
+      <div>
+        <div class="rep-title">Reporte mensual</div>
+        <div class="rep-period">${mesNombre.charAt(0).toUpperCase()+mesNombre.slice(1)} · Lady Fresa</div>
+      </div>
+      <button class="btn btn-ghost btn-sm btn-print" onclick="window.print()" style="background:rgba(255,255,255,.15);color:white;border-color:rgba(255,255,255,.3);">Imprimir / PDF</button>
+    </div>
+
+    ${branches.map(b=>{
+      const bGoals=S.goals.filter(g=>g.sucursal===b);
+      const ventasMes=S.posData.ventasMes[b]?.total||0;
+      const pedidosMes=S.posData.ventasMes[b]?.pedidos||0;
+      const ticket=S.posData.ventasMes[b]?.ticket||0;
+      const metaMes=getMonthlyTarget(b);
+      const ventasPct=Math.min(100,Math.round(ventasMes/metaMes*100));
+      const goalsDone=bGoals.filter(g=>pct(g.current_value,g.target)>=100).length;
+      const goalsTotal=bGoals.length;
+      const limpiezaDias=limpiezaData.filter(l=>l.sucursal===b&&l.aprobado).length;
+      const limpiezaTotal=limpiezaData.filter(l=>l.sucursal===b).length;
+      const branchEmps=S.employees.filter(e=>e.sucursal===b).sort((a,c)=>c.xp-a.xp);
+      const topEmp=branchEmps[0];
+      const sugsBranch=S.sugerencias.filter(s=>s.sucursal===b);
+
+      return`<div class="rep-section">
+        <div class="rep-section-title">${b}</div>
+
+        <div class="rep-kpi-grid">
+          <div class="rep-kpi">
+            <div class="rep-kpi-val" style="color:${ventasPct>=100?'var(--green)':ventasPct>=70?'var(--gold)':'var(--passion)'};">$${ventasMes.toLocaleString('es-MX',{maximumFractionDigits:0})}</div>
+            <div class="rep-kpi-label">Ventas del mes</div>
+            <div class="rep-kpi-sub">${ventasPct}% de meta ($${metaMes.toLocaleString('es-MX',{maximumFractionDigits:0})})</div>
+          </div>
+          <div class="rep-kpi">
+            <div class="rep-kpi-val">${pedidosMes}</div>
+            <div class="rep-kpi-label">Pedidos totales</div>
+            <div class="rep-kpi-sub">Ticket prom. $${ticket}</div>
+          </div>
+          <div class="rep-kpi">
+            <div class="rep-kpi-val" style="color:${goalsDone===goalsTotal&&goalsTotal>0?'var(--green)':'var(--grana)'};">${goalsDone}/${goalsTotal}</div>
+            <div class="rep-kpi-label">Objetivos cumplidos</div>
+            <div class="rep-kpi-sub">${goalsTotal>0?Math.round(goalsDone/goalsTotal*100):0}% completados</div>
+          </div>
+          <div class="rep-kpi">
+            <div class="rep-kpi-val" style="color:${limpiezaDias>=20?'var(--green)':limpiezaDias>=10?'var(--gold)':'var(--passion)'};">${limpiezaDias}/${limpiezaTotal||now.getDate()}</div>
+            <div class="rep-kpi-label">Días limpieza aprobada</div>
+            <div class="rep-kpi-sub">${limpiezaTotal>0?Math.round(limpiezaDias/limpiezaTotal*100):0}% de turnos</div>
+          </div>
+        </div>
+
+        ${bGoals.length>0?`
+        <div style="margin-top:1rem;">
+          <div style="font-size:11px;font-style:italic;color:var(--text-m);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Progreso de objetivos</div>
+          ${bGoals.map(g=>{
+            const p=pct(g.current_value,g.target);
+            const col=p>=100?'var(--green)':p>=50?'var(--gold)':'var(--passion)';
+            return`<div class="rep-goal-row">
+              <span style="font-size:14px;">${CAT_ICON[g.category]||'🎯'}</span>
+              <span class="rep-goal-name">${g.name}</span>
+              <div class="rep-bar-wrap"><div class="rep-bar-fill" style="width:${p}%;background:${col};"></div></div>
+              <span class="rep-goal-pct" style="color:${col};">${p}%</span>
+            </div>`;
+          }).join('')}
+        </div>`:''}
+
+        ${branchEmps.length>0?`
+        <div style="margin-top:1rem;">
+          <div style="font-size:11px;font-style:italic;color:var(--text-m);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Equipo · XP del mes</div>
+          ${branchEmps.map((e,i)=>`
+            <div class="rep-emp-row">
+              ${i===0?`<span style="font-size:14px;">🥇</span>`:i===1?`<span style="font-size:14px;">🥈</span>`:i===2?`<span style="font-size:14px;">🥉</span>`:`<span style="font-size:14px;min-width:20px;text-align:center;color:var(--text-m);">${i+1}</span>`}
+              <div class="rep-emp-av" style="background:${AVCOLORS[e.avatar_index%AVCOLORS.length]}22;color:${AVCOLORS[e.avatar_index%AVCOLORS.length]};">${getInitials(e.name)}</div>
+              <span class="rep-emp-name">${e.name}</span>
+              <span class="rep-emp-xp">⚡${e.xp}</span>
+            </div>`).join('')}
+        </div>`:''}
+
+        ${sugsBranch.length>0?`
+        <div style="margin-top:1rem;display:flex;gap:10px;flex-wrap:wrap;">
+          <div class="rep-kpi" style="flex:1;min-width:100px;">
+            <div class="rep-kpi-val">${sugsBranch.length}</div>
+            <div class="rep-kpi-label">Ideas enviadas</div>
+          </div>
+          <div class="rep-kpi" style="flex:1;min-width:100px;">
+            <div class="rep-kpi-val" style="color:var(--green);">${sugsBranch.filter(s=>s.status==='implementada').length}</div>
+            <div class="rep-kpi-label">Implementadas</div>
+          </div>
+          <div class="rep-kpi" style="flex:1;min-width:100px;">
+            <div class="rep-kpi-val" style="color:var(--gold);">${sugsBranch.filter(s=>s.status==='en_proceso').length}</div>
+            <div class="rep-kpi-label">En proceso</div>
+          </div>
+        </div>`:''}
+
+      </div>`;
+    }).join('')}`;
+
+  document.getElementById('root').innerHTML=`<div class="app">
+    <div class="header">
+      <div><div class="logo">Lady Fresa<span class="logo-sub">Team Goals · Est. 2025</span></div></div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="text-align:right;">
+          <div class="user-name">${S.user.name.split(' ')[0]}</div>
+          <div class="user-lv">${getLevel(S.user.xp).name} · ${S.user.xp} XP</div>
+        </div>
+        <button class="btn-exit" onclick="logout()">Salir</button>
+      </div>
+    </div>
+    <div class="nav">${[
+      {id:'dashboard',label:'Dashboard'},
+      {id:'perfil',label:'Mi perfil'},
+      {id:'ranking',label:'Ranking'},
+      {id:'benefits',label:'Beneficios'},
+      {id:'limpieza',label:'Limpieza'},
+      {id:'sugerencias',label:'Ideas 💡'},
+      {id:'liga',label:'Liga'},
+      {id:'reporte',label:'Reporte'},
+      {id:'admin',label:'Admin'},
+    ].map(t=>`<button class="nav-btn${S.tab===t.id?' active':''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('')}</div>
+    <div class="content">${reportHTML}</div>
   </div>`;
 }
 
