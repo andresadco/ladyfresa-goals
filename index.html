@@ -192,6 +192,28 @@ html,body{height:100%;background:var(--cream);font-family:'Instrument Serif',Geo
 .spinner{width:28px;height:28px;border:3px solid var(--pink);border-top-color:var(--passion);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* SUGERENCIAS */
+.sug-status{display:inline-block;font-size:10px;font-family:'Instrument Serif',serif;font-style:italic;padding:3px 9px;border-radius:20px;}
+.sug-nueva{background:var(--pink-light);color:var(--grana);}
+.sug-revisada{background:var(--gold-light);color:var(--gold);}
+.sug-en_proceso{background:var(--blue-light);color:#1a6a75;}
+.sug-implementada{background:var(--green-light);color:var(--green);}
+.sug-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;position:relative;}
+.sug-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:var(--r) 0 0 var(--r);}
+.sug-card.sug-nueva::before{background:var(--passion);}
+.sug-card.sug-revisada::before{background:var(--gold);}
+.sug-card.sug-en_proceso::before{background:var(--blue);}
+.sug-card.sug-implementada::before{background:var(--green);}
+.sug-cat{font-size:10px;font-style:italic;color:var(--text-m);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.sug-titulo{font-family:Impact,'Arial Black',sans-serif;font-size:14px;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;}
+.sug-desc{font-size:12px;font-style:italic;color:var(--text-m);margin-bottom:8px;}
+.sug-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+.sug-meta{font-size:11px;font-style:italic;color:var(--text-m);}
+.sug-nota{background:var(--gold-light);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;font-style:italic;color:#5a3e00;margin-top:8px;}
+.sug-tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap;}
+.sug-tab{font-family:'Instrument Serif',serif;font-size:12px;font-style:italic;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:white;color:var(--text-m);cursor:pointer;transition:all .2s;}
+.sug-tab.active{background:var(--grana);color:white;border-color:var(--grana);}
+
 /* GAME DASHBOARD */
 .game-header{background:var(--grana);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;}
 .game-branch-name{font-family:Impact,'Arial Black',sans-serif;font-size:22px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:1px;}
@@ -287,6 +309,41 @@ html,body{height:100%;background:var(--cream);font-family:'Instrument Serif',Geo
   </div>
 </div>
 
+<!-- Modal nueva sugerencia -->
+<div class="modal-bg" id="modal-sug">
+  <div class="modal">
+    <div class="modal-title">Nueva sugerencia 💡</div>
+    <div class="frow"><div><label class="flabel">Categoría</label><select class="fselect" id="sug-cat">
+      <option value="operacion">⚙️ Operación</option>
+      <option value="producto">🍓 Producto</option>
+      <option value="limpieza">✨ Limpieza</option>
+      <option value="ambiente">🌸 Ambiente</option>
+      <option value="equipo">👥 Equipo</option>
+      <option value="otra">💬 Otra</option>
+    </select></div><div><label class="flabel">Sucursal</label><select class="fselect" id="sug-suc"></select></div></div>
+    <div class="frow full"><div><label class="flabel">Título</label><input class="finput" id="sug-titulo" placeholder="ej. Mejorar el orden de la barra"/></div></div>
+    <div class="frow full"><div><label class="flabel">Descripción (opcional)</label><textarea class="finput" id="sug-desc" rows="3" placeholder="Explica tu idea con más detalle..." style="resize:none;height:80px;"></textarea></div></div>
+    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-sug')">Cancelar</button><button class="btn btn-primary btn-sm" onclick="saveSugerencia()">Enviar sugerencia</button></div>
+  </div>
+</div>
+
+<!-- Modal responder sugerencia (admin) -->
+<div class="modal-bg" id="modal-sug-resp">
+  <div class="modal">
+    <div class="modal-title">Responder sugerencia</div>
+    <input type="hidden" id="sresp-id"/>
+    <div class="frow full"><div><label class="flabel">Cambiar estado</label><select class="fselect" id="sresp-status">
+      <option value="nueva">Nueva</option>
+      <option value="revisada">Revisada</option>
+      <option value="en_proceso">En proceso</option>
+      <option value="implementada">Implementada ✓</option>
+    </select></div></div>
+    <div class="frow full"><div><label class="flabel">Nota para el empleado</label><textarea class="finput" id="sresp-nota" rows="3" placeholder="ej. Excelente idea, lo implementamos la siguiente semana..." style="resize:none;height:80px;"></textarea></div></div>
+    <div class="frow full"><div><label class="flabel">XP a otorgar (si se implementa)</label><input class="finput" id="sresp-xp" type="number" placeholder="0" value="0"/></div></div>
+    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-sug-resp')">Cancelar</button><button class="btn btn-primary btn-sm" onclick="responderSugerencia()">Guardar respuesta</button></div>
+  </div>
+</div>
+
 <!-- Modal beneficio (agregar / editar) -->
 <div class="modal-bg" id="modal-benefit">
   <div class="modal">
@@ -323,6 +380,7 @@ let S={
   loggedIn:false,user:null,tab:'dashboard',branch:'Balbuena',
   employees:[],roles:[],goals:[],benefits:[],ventasConfig:{},sucursales:[],
   posData:{ticket:{},ventasHoy:{},ventasMes:{}},
+  sugerencias:[],
   limpieza:{piso:false,barra:false,refrigerador:false,bano:false,presentacion_area:false,nota:''},
   limpiezaHoy:null,selectedEmp:null,
 };
@@ -360,7 +418,15 @@ async function loadAll(){
       S.branch=S.sucursales[0].name;
     }
     await loadPOSData();
+    await loadSugerencias();
   }catch(e){console.error('loadAll error:',e);}
+}
+
+async function loadSugerencias(){
+  try{
+    const res=await api('lf_sugerencias','select=*,lf_employees(name)&order=created_at.desc');
+    S.sugerencias=Array.isArray(res)?res:[];
+  }catch(e){}
 }
 
 async function loadPOSData(){
@@ -472,6 +538,7 @@ function renderApp(){
     {id:'ranking',label:'Ranking'},
     {id:'benefits',label:'Beneficios'},
     {id:'limpieza',label:'Limpieza'},
+    {id:'sugerencias',label:'Ideas 💡'},
   ];
   if(role.can_update_progress||role.can_edit_goals){
     tabs.push({id:'liga',label:'Liga'});
@@ -495,6 +562,7 @@ function renderApp(){
         S.tab==='benefits'?renderBenefits():
         S.tab==='limpieza'?renderLimpieza():
         S.tab==='liga'?renderLiga():
+        S.tab==='sugerencias'?renderSugerencias():
         renderAdmin()}
     </div>
   </div>`;
@@ -1188,6 +1256,105 @@ async function deleteBenefit(id){
   await api('lf_benefits',`id=eq.${id}`,'PATCH',{active:false});
   S.benefits=S.benefits.filter(b=>b.id!==id);
   showToast('Beneficio eliminado');render();
+}
+
+const CAT_SUG_ICON={operacion:'⚙️',producto:'🍓',limpieza:'✨',ambiente:'🌸',equipo:'👥',otra:'💬'};
+const STATUS_LABEL={nueva:'Nueva',revisada:'Revisada',en_proceso:'En proceso',implementada:'Implementada ✓'};
+let sugFilter='todas';
+
+function renderSugerencias(){
+  const role=getUserRole();
+  const isAdmin=role.can_edit_employees;
+  const isGerente=role.can_update_progress&&!role.can_edit_employees;
+  const mySugs=S.sugerencias.filter(s=>s.employee_id===S.user.id);
+  const visibleSugs=isAdmin||isGerente
+    ? (sugFilter==='todas'?S.sugerencias:S.sugerencias.filter(s=>s.status===sugFilter))
+    : mySugs;
+
+  return`
+    <div class="sec-title">Ideas & sugerencias 💡</div>
+    <div class="sec-sub">${isAdmin||isGerente?'Todas las sugerencias del equipo':'Tus ideas enviadas'}</div>
+
+    <button class="btn btn-primary" style="margin-bottom:1rem;" onclick="openSugModal()">+ Nueva idea</button>
+
+    ${isAdmin||isGerente?`<div class="sug-tabs">
+      ${['todas','nueva','revisada','en_proceso','implementada'].map(f=>`
+        <button class="sug-tab${sugFilter===f?' active':''}" onclick="setSugFilter('${f}')">${f==='todas'?'Todas':STATUS_LABEL[f]}</button>`).join('')}
+    </div>`:''}
+
+    ${visibleSugs.length===0
+      ?`<div class="empty">${isAdmin||isGerente?'No hay sugerencias aún':'Aún no has enviado ideas — ¡tu opinión cuenta!'}</div>`
+      :visibleSugs.map(s=>{
+        const empName=s.lf_employees?.name||'Empleado';
+        const dateStr=new Date(s.created_at).toLocaleDateString('es-MX',{day:'numeric',month:'short'});
+        return`<div class="sug-card ${s.status}">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;">
+            <div>
+              <div class="sug-cat">${CAT_SUG_ICON[s.categoria]||'💬'} ${s.categoria}</div>
+              <div class="sug-titulo">${s.titulo}</div>
+            </div>
+            <span class="sug-status sug-${s.status}">${STATUS_LABEL[s.status]||s.status}</span>
+          </div>
+          ${s.descripcion?`<div class="sug-desc">${s.descripcion}</div>`:''}
+          ${s.admin_nota?`<div class="sug-nota">💬 ${s.admin_nota}</div>`:''}
+          <div class="sug-footer">
+            <span class="sug-meta">${isAdmin||isGerente?empName+' · ':''}${s.sucursal} · ${dateStr}</span>
+            <div style="display:flex;gap:6px;align-items:center;">
+              ${s.xp_otorgado>0?`<span style="font-size:11px;font-style:italic;color:var(--gold);">⚡+${s.xp_otorgado} XP</span>`:''}
+              ${isAdmin||isGerente?`<button class="btn btn-ghost btn-sm" onclick="openRespModal('${s.id}','${s.status}',\`${(s.admin_nota||'').replace(/`/g,"'")}\`)">Responder</button>`:''}
+            </div>
+          </div>
+        </div>`;
+      }).join('')}`;
+}
+
+function setSugFilter(f){sugFilter=f;render();}
+
+function openSugModal(){
+  const sel=document.getElementById('sug-suc');
+  if(sel)sel.innerHTML=S.sucursales.map(s=>`<option value="${s.name}"${s.name===S.branch?' selected':''}>${s.name}</option>`).join('');
+  openModal('modal-sug');
+}
+
+async function saveSugerencia(){
+  const titulo=document.getElementById('sug-titulo').value.trim();
+  const categoria=document.getElementById('sug-cat').value;
+  const sucursal=document.getElementById('sug-suc').value;
+  const descripcion=document.getElementById('sug-desc').value.trim();
+  if(!titulo){showToast('Escribe el título de tu idea');return;}
+  const body={employee_id:S.user.id,sucursal,categoria,titulo,descripcion,status:'nueva'};
+  const created=await api('lf_sugerencias','select=*,lf_employees(name)','POST',body);
+  if(Array.isArray(created)&&created[0])S.sugerencias.unshift(created[0]);
+  closeModal('modal-sug');
+  document.getElementById('sug-titulo').value='';
+  document.getElementById('sug-desc').value='';
+  showToast('💡 Idea enviada ¡gracias!');render();
+}
+
+function openRespModal(id,status,nota){
+  document.getElementById('sresp-id').value=id;
+  document.getElementById('sresp-status').value=status||'nueva';
+  document.getElementById('sresp-nota').value=nota||'';
+  document.getElementById('sresp-xp').value='0';
+  openModal('modal-sug-resp');
+}
+
+async function responderSugerencia(){
+  const id=document.getElementById('sresp-id').value;
+  const status=document.getElementById('sresp-status').value;
+  const admin_nota=document.getElementById('sresp-nota').value.trim();
+  const xp_otorgado=parseInt(document.getElementById('sresp-xp').value)||0;
+  await api('lf_sugerencias',`id=eq.${id}`,'PATCH',{status,admin_nota,xp_otorgado,updated_at:new Date().toISOString()});
+  const sug=S.sugerencias.find(s=>s.id===id);
+  if(sug){sug.status=status;sug.admin_nota=admin_nota;sug.xp_otorgado=xp_otorgado;}
+  // give XP if implemented
+  if(status==='implementada'&&xp_otorgado>0&&sug){
+    await api('lf_employees',`id=eq.${sug.employee_id}`,'PATCH',{xp:xp_otorgado});
+    showToast('✓ Sugerencia implementada +'+xp_otorgado+' XP al empleado');
+  } else {
+    showToast('Respuesta guardada ✓');
+  }
+  closeModal('modal-sug-resp');render();
 }
 
 // Boot
