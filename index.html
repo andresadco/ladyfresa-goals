@@ -191,6 +191,57 @@ html,body{height:100%;background:var(--cream);font-family:'Instrument Serif',Geo
 .loading-logo span{font-size:56px;display:block;}
 .spinner{width:28px;height:28px;border:3px solid var(--pink);border-top-color:var(--passion);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
+
+/* GAME DASHBOARD */
+.game-header{background:var(--grana);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;}
+.game-branch-name{font-family:Impact,'Arial Black',sans-serif;font-size:22px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:1px;}
+.game-period{font-size:12px;font-style:italic;color:rgba(255,255,255,.75);margin-top:2px;}
+.team-xp-bar-wrap{background:rgba(255,255,255,.15);border-radius:20px;height:8px;width:120px;overflow:hidden;margin-top:6px;}
+.team-xp-bar-fill{height:100%;border-radius:20px;background:var(--pink);transition:width 1s ease;}
+
+.daily-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem;position:relative;overflow:hidden;}
+.daily-card::after{content:'HOY';position:absolute;top:10px;right:12px;font-family:Impact,'Arial Black',sans-serif;font-size:10px;color:var(--pink);letter-spacing:2px;}
+.daily-title{font-family:Impact,'Arial Black',sans-serif;font-size:11px;color:var(--text-m);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.daily-amounts{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;}
+.daily-current{font-family:Impact,'Arial Black',sans-serif;font-size:32px;font-weight:900;color:var(--grana);line-height:1;}
+.daily-sep{font-size:18px;color:var(--text-m);}
+.daily-target{font-family:Impact,'Arial Black',sans-serif;font-size:18px;color:var(--text-m);}
+.daily-unit{font-size:11px;font-style:italic;color:var(--text-m);margin-left:4px;}
+.daily-bar-wrap{height:10px;background:#f0e0e3;border-radius:5px;overflow:hidden;margin-bottom:6px;}
+.daily-bar-fill{height:100%;border-radius:5px;transition:width 1s ease;position:relative;}
+.daily-bar-fill::after{content:'';position:absolute;top:0;right:0;bottom:0;width:3px;background:rgba(255,255,255,.5);border-radius:0 5px 5px 0;}
+.daily-status{font-size:12px;font-style:italic;}
+.daily-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;}
+@media(max-width:480px){.daily-grid{grid-template-columns:1fr;}}
+
+.quest-list{display:flex;flex-direction:column;gap:10px;margin-bottom:1rem;}
+.quest-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden;transition:all .2s;}
+.quest-card.quest-done{border-color:var(--green);}
+.quest-card.quest-done::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--green);}
+.quest-card:not(.quest-done)::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--passion);}
+.quest-card.quest-near::before{background:var(--gold)!important;}
+.quest-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.quest-icon{font-size:22px;flex-shrink:0;}
+.quest-info{flex:1;}
+.quest-name{font-family:Impact,'Arial Black',sans-serif;font-size:14px;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:.3px;}
+.quest-nums{font-size:12px;font-style:italic;color:var(--text-m);margin-top:2px;}
+.quest-badge{font-family:Impact,'Arial Black',sans-serif;font-size:11px;padding:4px 10px;border-radius:20px;white-space:nowrap;}
+.qb-done{background:var(--green);color:white;}
+.qb-near{background:var(--gold-light);color:var(--gold);}
+.qb-prog{background:var(--pink-light);color:var(--grana);}
+.quest-bar-wrap{height:8px;background:#f0e0e3;border-radius:4px;overflow:hidden;margin-bottom:8px;}
+.quest-bar-fill{height:100%;border-radius:4px;transition:width 1s ease;}
+.quest-footer{display:flex;align-items:center;justify-content:space-between;}
+.quest-xp{font-size:11px;font-style:italic;color:var(--gold);}
+.quest-reward{font-size:11px;font-style:italic;color:var(--text-m);}
+
+.energy-bar-wrap{background:white;border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem;}
+.energy-title{font-family:Impact,'Arial Black',sans-serif;font-size:12px;color:var(--grana);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.energy-pct{font-size:20px;color:var(--passion);}
+.energy-segments{display:flex;gap:3px;}
+.energy-seg{flex:1;height:16px;border-radius:3px;background:#f0e0e3;transition:background .4s;}
+.energy-seg.on{background:var(--passion);}
+.energy-seg.on.half{background:var(--gold);}
 </style>
 </head>
 <body>
@@ -413,45 +464,126 @@ function renderApp(){
   </div>`;
 }
 
+function getDailyTarget(){
+  const day=new Date().getDay();
+  return (day===5||day===6||day===0)?14000:10000;
+}
+function getMonthlyTarget(){
+  const now=new Date();
+  const days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  let total=0;
+  for(let d=1;d<=days;d++){const wd=new Date(now.getFullYear(),now.getMonth(),d).getDay();total+=(wd===5||wd===6||wd===0)?14000:10000;}
+  return total;
+}
+function getDayName(){const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];return days[new Date().getDay()];}
+
 function renderDashboard(){
   const branchGoals=S.goals.filter(g=>g.sucursal===S.branch);
   const posTicket=S.posData.ticket[S.branch]?.avg||0;
   const goalsWithAuto=branchGoals.map(g=>g.category==='ticket'?{...g,current_value:posTicket}:g);
   const done=goalsWithAuto.filter(g=>pct(g.current_value,g.target)>=100).length;
-  const avg=goalsWithAuto.length?Math.round(goalsWithAuto.reduce((a,g)=>a+pct(g.current_value,g.target),0)/goalsWithAuto.length):0;
-  const xpDisp=goalsWithAuto.filter(g=>pct(g.current_value,g.target)>=100).reduce((a,g)=>a+g.xp_reward,0);
+  const totalGoals=goalsWithAuto.length;
+  const energyPct=totalGoals?Math.round(done/totalGoals*100):0;
+  const teamXP=S.employees.filter(e=>e.sucursal===S.branch).reduce((a,e)=>a+e.xp,0);
+  const dailyTarget=getDailyTarget();
+  const monthlyTarget=getMonthlyTarget();
+
+  // separate ventas goals from rest
+  const ventasGoal=goalsWithAuto.find(g=>g.category==='ventas');
+  const ticketGoal=goalsWithAuto.find(g=>g.category==='ticket');
+  const otherGoals=goalsWithAuto.filter(g=>g.category!=='ventas'&&g.category!=='ticket');
+
+  const segs=10;
+  const segsOn=Math.round(energyPct/10);
+
   return`
     <div class="branch-row">
       <button class="branch-tab${S.branch==='Balbuena'?' active':''}" onclick="setBranch('Balbuena')">Balbuena</button>
-      <button class="branch-tab${S.branch==='Del Valle'?' active':''}" onclick="setBranch('Del Valle')">Del Valle</button>
+      <button class="branch-tab${S.branch==='Moctezuma'?' active':''}" onclick="setBranch('Moctezuma')">Moctezuma</button>
     </div>
-    <div class="sec-title">${S.branch}</div>
-    <div class="sec-sub">Objetivos del periodo · ${new Date().toLocaleDateString('es-MX',{month:'long',year:'numeric'})}</div>
-    <div class="kpi-row">
-      <div class="kpi"><div class="kpi-icon">🎯</div><div class="kpi-label">Objetivos cumplidos</div><div class="kpi-val">${done}/${goalsWithAuto.length}</div><div class="kpi-bar"><div class="kpi-fill" style="width:${goalsWithAuto.length?Math.round(done/goalsWithAuto.length*100):0}%;"></div></div></div>
-      <div class="kpi"><div class="kpi-icon">🧾</div><div class="kpi-label">Ticket promedio</div><div class="kpi-val">$${posTicket}</div><div class="kpi-sub">Meta: $240 MXN</div><div class="kpi-bar"><div class="kpi-fill" style="width:${Math.min(100,Math.round(posTicket/240*100))}%;background:#1a6a75;"></div></div></div>
-      <div class="kpi"><div class="kpi-icon">⚡</div><div class="kpi-label">XP ganado</div><div class="kpi-val">${xpDisp}</div><div class="kpi-bar"><div class="kpi-fill" style="width:${Math.min(100,Math.round(xpDisp/500*100))}%;background:var(--gold);"></div></div></div>
+
+    <div class="game-header">
+      <div>
+        <div class="game-branch-name">${S.branch}</div>
+        <div class="game-period">${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}</div>
+        <div class="team-xp-bar-wrap"><div class="team-xp-bar-fill" style="width:${Math.min(100,Math.round(teamXP/2000*100))}%;"></div></div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:Impact,sans-serif;font-size:28px;font-weight:900;color:white;line-height:1;">${done}<span style="font-size:16px;color:rgba(255,255,255,.6);">/${totalGoals}</span></div>
+        <div style="font-size:11px;font-style:italic;color:rgba(255,255,255,.7);">misiones cumplidas</div>
+        <div style="font-size:11px;font-style:italic;color:var(--pink);margin-top:2px;">⚡ ${teamXP} XP equipo</div>
+      </div>
     </div>
-    ${goalsWithAuto.length===0
-      ?`<div class="empty">Sin objetivos configurados.<br/>Agrega desde Admin.</div>`
-      :`<div class="goals-grid">${goalsWithAuto.map(g=>{
-          const p=pct(g.current_value,g.target);
-          const d=p>=100;
-          const isAuto=AUTO_CATS.includes(g.category);
-          const col=d?'#053A0A':p>=50?'var(--gold)':'var(--passion)';
-          return`<div class="goal-card${d?' done':''}${isAuto?' auto':''}">
-            <div class="gc-top">
-              <div><span style="font-size:18px;">${CAT_ICON[g.category]||'🎯'}</span>${isAuto?`<span class="sync-badge">POS live</span>`:''}</div>
-              <span class="gc-badge ${d?'badge-done':'badge-prog'}">${d?'✓ Logrado':p+'%'}</span>
+
+    <div class="energy-bar-wrap">
+      <div class="energy-title">
+        <span>Energía del equipo</span>
+        <span class="energy-pct">${energyPct}%</span>
+      </div>
+      <div class="energy-segments">
+        ${Array.from({length:segs},(_,i)=>`<div class="energy-seg${i<segsOn?' on'+(segsOn<=3?' half':''):''}"></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="daily-grid">
+      <div class="daily-card">
+        <div class="daily-title">Ventas · ${getDayName()} hoy</div>
+        <div class="daily-amounts">
+          <div class="daily-current">$${(ventasGoal?.current_value||0).toLocaleString('es-MX')}</div>
+          <div class="daily-sep">/</div>
+          <div class="daily-target">$${dailyTarget.toLocaleString('es-MX')}</div>
+        </div>
+        <div class="daily-bar-wrap"><div class="daily-bar-fill" style="width:${Math.min(100,pct(ventasGoal?.current_value||0,dailyTarget))}%;background:${pct(ventasGoal?.current_value||0,dailyTarget)>=100?'var(--green)':pct(ventasGoal?.current_value||0,dailyTarget)>=60?'var(--gold)':'var(--passion)'};"></div></div>
+        <div class="daily-status" style="color:${pct(ventasGoal?.current_value||0,dailyTarget)>=100?'var(--green)':'var(--text-m)'};">${pct(ventasGoal?.current_value||0,dailyTarget)>=100?'✓ Meta del día alcanzada':'Faltan $'+(dailyTarget-(ventasGoal?.current_value||0)).toLocaleString('es-MX')}</div>
+      </div>
+      <div class="daily-card">
+        <div class="daily-title">Ventas · mes</div>
+        <div class="daily-amounts">
+          <div class="daily-current" style="font-size:24px;">$${((ventasGoal?.current_value||0)*30/Math.max(1,new Date().getDate())||0).toLocaleString('es-MX',{maximumFractionDigits:0})}</div>
+        </div>
+        <div class="daily-bar-wrap"><div class="daily-bar-fill" style="width:${Math.min(100,pct((ventasGoal?.current_value||0)*30/Math.max(1,new Date().getDate()),monthlyTarget))}%;background:var(--blue);"></div></div>
+        <div class="daily-status" style="color:var(--text-m);">Meta mes: $${monthlyTarget.toLocaleString('es-MX')}</div>
+      </div>
+    </div>
+
+    ${ticketGoal?`<div class="daily-card" style="margin-bottom:1rem;">
+      <div class="daily-title">🧾 Ticket promedio</div>
+      <div class="daily-amounts">
+        <div class="daily-current">$${posTicket}</div>
+        <div class="daily-sep">/</div>
+        <div class="daily-target">$${ticketGoal.target}</div>
+        <div class="daily-unit">MXN</div>
+      </div>
+      <div class="daily-bar-wrap"><div class="daily-bar-fill" style="width:${Math.min(100,pct(posTicket,ticketGoal.target))}%;background:${pct(posTicket,ticketGoal.target)>=100?'var(--green)':'#1a6a75'};"></div></div>
+      <div class="daily-status" style="color:${pct(posTicket,ticketGoal.target)>=100?'var(--green)':'var(--text-m)'};">${pct(posTicket,ticketGoal.target)>=100?'✓ Meta de ticket alcanzada':'Sube $'+(ticketGoal.target-posTicket)+' más por pedido'}</div>
+    </div>`:''}
+
+    ${otherGoals.length===0&&!ventasGoal&&!ticketGoal?`<div class="empty">Sin objetivos. Agrega desde Admin.</div>`:`
+    <div style="font-family:Impact,'Arial Black',sans-serif;font-size:13px;color:var(--grana);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Misiones del mes</div>
+    <div class="quest-list">
+      ${otherGoals.map(g=>{
+        const p=pct(g.current_value,g.target);
+        const d=p>=100;
+        const near=p>=70&&!d;
+        const col=d?'#053A0A':near?'var(--gold)':'var(--passion)';
+        return`<div class="quest-card${d?' quest-done':near?' quest-near':''}">
+          <div class="quest-top">
+            <div class="quest-icon">${CAT_ICON[g.category]||'🎯'}</div>
+            <div class="quest-info">
+              <div class="quest-name">${g.name}</div>
+              <div class="quest-nums">${g.current_value} / ${g.target} ${g.unit}</div>
             </div>
-            <div class="gc-name">${g.name}</div>
-            <div class="gc-prog">${g.current_value} / ${g.target} ${g.unit}</div>
-            <div class="gc-bar"><div class="gc-fill" style="width:${p}%;background:${col};"></div></div>
-            <div class="gc-xp">⚡ +${g.xp_reward} XP al completar</div>
-            ${g.reward_text?`<div class="gc-reward">🎁 ${g.reward_text}</div>`:''}
-          </div>`;
-        }).join('')}</div>`}`;
-}
+            <span class="quest-badge ${d?'qb-done':near?'qb-near':'qb-prog'}">${d?'✓ LOGRADO':near?'¡CASI!':p+'%'}</span>
+          </div>
+          <div class="quest-bar-wrap"><div class="quest-bar-fill" style="width:${p}%;background:${col};"></div></div>
+          <div class="quest-footer">
+            <span class="quest-xp">⚡ +${g.xp_reward} XP</span>
+            ${g.reward_text?`<span class="quest-reward">🎁 ${g.reward_text}</span>`:''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`}
+  `;}
 
 function renderRanking(){
   const sorted=[...S.employees].sort((a,b)=>b.xp-a.xp);
