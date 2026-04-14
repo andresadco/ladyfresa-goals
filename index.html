@@ -259,7 +259,7 @@ html,body{height:100%;background:var(--cream);font-family:'Instrument Serif',Geo
   <div class="modal">
     <div class="modal-title" id="modal-goal-title">Nuevo objetivo</div>
     <input type="hidden" id="g-id"/>
-    <div class="frow"><div><label class="flabel">Sucursal</label><select class="fselect" id="g-suc"><option value="Balbuena">Balbuena</option><option value="Moctezuma">Moctezuma</option></select></div><div><label class="flabel">Categoría</label><select class="fselect" id="g-cat"><option value="ventas">💰 Ventas</option><option value="ticket">🧾 Ticket promedio</option><option value="upselling">⬆️ Upselling</option><option value="reseñas">⭐ Reseñas</option><option value="seguidores">📲 Seguidores</option><option value="contenido">🎬 Contenido</option><option value="limpieza">✨ Limpieza</option><option value="atencion">💬 Atención</option></select></div></div>
+    <div class="frow"><div><label class="flabel">Sucursal</label><select class="fselect" id="g-suc"></select></div><div><label class="flabel">Categoría</label><select class="fselect" id="g-cat"><option value="ventas">💰 Ventas</option><option value="ticket">🧾 Ticket promedio</option><option value="upselling">⬆️ Upselling</option><option value="reseñas">⭐ Reseñas</option><option value="seguidores">📲 Seguidores</option><option value="contenido">🎬 Contenido</option><option value="limpieza">✨ Limpieza</option><option value="atencion">💬 Atención</option></select></div></div>
     <div class="frow full"><div><label class="flabel">Nombre</label><input class="finput" id="g-name" placeholder="ej. Ventas semanales"/></div></div>
     <div class="frow"><div><label class="flabel">Meta</label><input class="finput" id="g-target" type="number" placeholder="100"/></div><div><label class="flabel">Unidad</label><input class="finput" id="g-unit" placeholder="pedidos"/></div></div>
     <div class="frow"><div><label class="flabel">Progreso actual</label><input class="finput" id="g-current" type="number" placeholder="0"/></div><div><label class="flabel">XP al completar</label><input class="finput" id="g-xp" type="number" placeholder="100"/></div></div>
@@ -274,7 +274,7 @@ html,body{height:100%;background:var(--cream);font-family:'Instrument Serif',Geo
     <div class="modal-title" id="modal-emp-title">Agregar empleado</div>
     <input type="hidden" id="e-id"/>
     <div class="frow full"><div><label class="flabel">Nombre completo</label><input class="finput" id="e-name" placeholder="Nombre Apellido"/></div></div>
-    <div class="frow"><div><label class="flabel">Rol</label><select class="fselect" id="e-role"></select></div><div><label class="flabel">Sucursal</label><select class="fselect" id="e-suc"><option value="Balbuena">Balbuena</option><option value="Moctezuma">Moctezuma</option></select></div></div>
+    <div class="frow"><div><label class="flabel">Rol</label><select class="fselect" id="e-role"></select></div><div><label class="flabel">Sucursal</label><select class="fselect" id="e-suc"></select></div></div>
     <div class="frow full"><div><label class="flabel">PIN (4 dígitos)</label>
       <div style="display:flex;gap:8px;align-items:center;">
         <input class="finput" id="e-pin" type="text" maxlength="4" placeholder="0000" style="letter-spacing:4px;font-size:16px;flex:1;"/>
@@ -309,7 +309,7 @@ const AUTO_CATS=['ticket'];
 
 let S={
   loggedIn:false,user:null,tab:'dashboard',branch:'Balbuena',
-  employees:[],roles:[],goals:[],benefits:[],ventasConfig:{},
+  employees:[],roles:[],goals:[],benefits:[],ventasConfig:{},sucursales:[],
   posData:{ticket:{},ventasHoy:{},ventasMes:{}},
   limpieza:{piso:false,barra:false,refrigerador:false,bano:false,presentacion_area:false,nota:''},
   limpiezaHoy:null,selectedEmp:null,
@@ -328,19 +328,25 @@ async function api(table,params='',method='GET',body=null){
 
 async function loadAll(){
   try{
-    const [emps,roles,goals,benefits,vcfg]=await Promise.all([
+    const [emps,roles,goals,benefits,vcfg,sucs]=await Promise.all([
       api('lf_employees','select=*,lf_roles(*)&active=eq.true&order=xp.desc'),
       api('lf_roles','select=*&order=name'),
       api('lf_goals','select=*&active=eq.true&order=created_at'),
       api('lf_benefits','select=*&active=eq.true&order=xp_required'),
       api('lf_ventas_config','select=*'),
+      api('sucursales','select=*&active=eq.true&order=name'),
     ]);
     S.employees=Array.isArray(emps)?emps:[];
     S.roles=Array.isArray(roles)?roles:[];
     S.goals=Array.isArray(goals)?goals:[];
     S.benefits=Array.isArray(benefits)?benefits:[];
+    S.sucursales=Array.isArray(sucs)?sucs:[];
     S.ventasConfig={};
     if(Array.isArray(vcfg))vcfg.forEach(r=>{S.ventasConfig[r.sucursal]=r;});
+    // ensure branch is valid
+    if(S.sucursales.length&&!S.sucursales.find(s=>s.name===S.branch)){
+      S.branch=S.sucursales[0].name;
+    }
     await loadPOSData();
   }catch(e){console.error('loadAll error:',e);}
 }
@@ -530,8 +536,7 @@ function renderDashboard(){
 
   return`
     ${!isFresero?`<div class="branch-row">
-      <button class="branch-tab${S.branch==='Balbuena'?' active':''}" onclick="setBranch('Balbuena')">Balbuena</button>
-      <button class="branch-tab${S.branch==='Moctezuma'?' active':''}" onclick="setBranch('Moctezuma')">Moctezuma</button>
+      ${S.sucursales.map(s=>`<button class="branch-tab${S.branch===s.name?' active':''}" onclick="setBranch('${s.name}')">${s.name}</button>`).join('')}
     </div>`:''}
 
     <div class="game-header">
@@ -778,7 +783,8 @@ function renderAdmin(){
     ${role.can_edit_employees?`
     <div class="admin-card">
       <div class="admin-title">Metas de ventas por tienda</div>
-      ${['Balbuena','Moctezuma'].map(b=>{
+      ${S.sucursales.map(s=>{
+        const b=s.name;
         const cfg=S.ventasConfig[b]||{meta_lunes_jueves:10000,meta_viernes_domingo:14000};
         return`<div style="padding:10px 0;border-bottom:1px solid var(--border);">
           <div style="font-family:Impact,'Arial Black',sans-serif;font-size:13px;color:var(--grana);text-transform:uppercase;margin-bottom:8px;">${b}</div>
@@ -846,7 +852,12 @@ async function saveProgress(){
   render();
 }
 
+function populateSucursalSelects(){
+  const opts=S.sucursales.map(s=>`<option value="${s.name}">${s.name}</option>`).join('');
+  ['g-suc','e-suc'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
+}
 function openAddGoalModal(){
+  populateSucursalSelects();
   document.getElementById('modal-goal-title').textContent='Nuevo objetivo';
   document.getElementById('modal-goal-btn').textContent='Guardar';
   document.getElementById('modal-goal-btn').onclick=saveGoal;
@@ -854,6 +865,7 @@ function openAddGoalModal(){
   ['g-name','g-target','g-unit','g-reward'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('g-current').value='0';
   document.getElementById('g-xp').value='100';
+  document.getElementById('g-suc').value=S.branch;
   openModal('modal-goal');
 }
 
@@ -928,6 +940,7 @@ function generatePIN(){
 }
 
 function openAddEmpModal(){
+  populateSucursalSelects();
   const sel=document.getElementById('e-role');
   if(sel)sel.innerHTML=S.roles.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
   document.getElementById('modal-emp-title').textContent='Agregar empleado';
@@ -944,6 +957,7 @@ function openAddEmpModal(){
 function openEditEmpModal(id){
   const emp=S.employees.find(e=>e.id===id);
   if(!emp)return;
+  populateSucursalSelects();
   const sel=document.getElementById('e-role');
   if(sel)sel.innerHTML=S.roles.map(r=>`<option value="${r.id}"${r.id===emp.role_id?' selected':''}>${r.name}</option>`).join('');
   document.getElementById('modal-emp-title').textContent='Editar empleado';
@@ -1021,7 +1035,7 @@ async function saveVentasConfig(branch){
 }
 
 function renderLiga(){
-  const branches=['Balbuena','Moctezuma'];
+  const branches=S.sucursales.map(s=>s.name);
   return`
     <div class="sec-title">Liga Lady Fresa</div>
     <div class="sec-sub">Competencia entre sucursales · ${new Date().toLocaleDateString('es-MX',{month:'long',year:'numeric'})}</div>
