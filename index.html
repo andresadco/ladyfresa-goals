@@ -310,7 +310,7 @@ const AUTO_CATS=['ticket'];
 let S={
   loggedIn:false,user:null,tab:'dashboard',branch:'Balbuena',
   employees:[],roles:[],goals:[],benefits:[],ventasConfig:{},
-  posData:{ticket:{}},
+  posData:{ticket:{},ventasHoy:{},ventasMes:{}},
   limpieza:{piso:false,barra:false,refrigerador:false,bano:false,presentacion_area:false,nota:''},
   limpiezaHoy:null,selectedEmp:null,
 };
@@ -347,11 +347,19 @@ async function loadAll(){
 
 async function loadPOSData(){
   try{
-    const tp=await api('lf_ticket_promedio','select=*');
+    const [tp,vh,vm]=await Promise.all([
+      api('lf_ticket_promedio','select=*'),
+      api('lf_ventas_hoy','select=*'),
+      api('lf_ventas_mes','select=*'),
+    ]);
     if(Array.isArray(tp)){
-      tp.forEach(r=>{
-        S.posData.ticket[r.sucursal]={avg:parseInt(r.ticket_promedio)||0,total:parseInt(r.total_pedidos)||0};
-      });
+      tp.forEach(r=>{S.posData.ticket[r.sucursal]={avg:parseInt(r.ticket_promedio)||0,total:parseInt(r.total_pedidos)||0};});
+    }
+    if(Array.isArray(vh)){
+      vh.forEach(r=>{S.posData.ventasHoy[r.sucursal]={total:parseFloat(r.ventas_hoy)||0,pedidos:parseInt(r.pedidos_hoy)||0};});
+    }
+    if(Array.isArray(vm)){
+      vm.forEach(r=>{S.posData.ventasMes[r.sucursal]={total:parseFloat(r.ventas_mes)||0,pedidos:parseInt(r.pedidos_mes)||0,ticket:parseInt(r.ticket_promedio)||0};});
     }
   }catch(e){console.error('POS data error:',e);}
 }
@@ -495,8 +503,16 @@ function renderDashboard(){
   const role=getUserRole();
   const isFresero=!role.can_update_progress&&!role.can_edit_goals;
   const branchGoals=S.goals.filter(g=>g.sucursal===S.branch);
-  const posTicket=S.posData.ticket[S.branch]?.avg||0;
-  const goalsWithAuto=branchGoals.map(g=>g.category==='ticket'?{...g,current_value:posTicket}:g);
+  const posTicket=S.posData.ventasMes[S.branch]?.ticket||S.posData.ticket[S.branch]?.avg||0;
+  const ventasHoy=S.posData.ventasHoy[S.branch]?.total||0;
+  const ventasMes=S.posData.ventasMes[S.branch]?.total||0;
+  const pedidosHoy=S.posData.ventasHoy[S.branch]?.pedidos||0;
+  const pedidosMes=S.posData.ventasMes[S.branch]?.pedidos||0;
+  const goalsWithAuto=branchGoals.map(g=>{
+    if(g.category==='ticket')return{...g,current_value:posTicket};
+    if(g.category==='ventas')return{...g,current_value:ventasMes};
+    return g;
+  });
   const done=goalsWithAuto.filter(g=>pct(g.current_value,g.target)>=100).length;
   const totalGoals=goalsWithAuto.length;
   const energyPct=totalGoals?Math.round(done/totalGoals*100):0;
@@ -543,22 +559,22 @@ function renderDashboard(){
 
     <div class="daily-grid">
       <div class="daily-card">
-        <div class="daily-title">Ventas · ${getDayName()} hoy</div>
+        <div class="daily-title">Ventas · ${getDayName()} hoy <span style="font-size:10px;background:var(--blue-light);color:#1a6a75;padding:1px 6px;border-radius:8px;margin-left:4px;">POS live</span></div>
         <div class="daily-amounts">
-          <div class="daily-current">$${(ventasGoal?.current_value||0).toLocaleString('es-MX')}</div>
+          <div class="daily-current">$${ventasHoy.toLocaleString('es-MX',{maximumFractionDigits:0})}</div>
           <div class="daily-sep">/</div>
           <div class="daily-target">$${dailyTarget.toLocaleString('es-MX')}</div>
         </div>
-        <div class="daily-bar-wrap"><div class="daily-bar-fill" style="width:${Math.min(100,pct(ventasGoal?.current_value||0,dailyTarget))}%;background:${pct(ventasGoal?.current_value||0,dailyTarget)>=100?'var(--green)':pct(ventasGoal?.current_value||0,dailyTarget)>=60?'var(--gold)':'var(--passion)'};"></div></div>
-        <div class="daily-status" style="color:${pct(ventasGoal?.current_value||0,dailyTarget)>=100?'var(--green)':'var(--text-m)'};">${pct(ventasGoal?.current_value||0,dailyTarget)>=100?'✓ Meta del día alcanzada':'Faltan $'+(dailyTarget-(ventasGoal?.current_value||0)).toLocaleString('es-MX')}</div>
+        <div class="daily-bar-wrap"><div class="daily-bar-fill" style="width:${Math.min(100,pct(ventasHoy,dailyTarget))}%;background:${pct(ventasHoy,dailyTarget)>=100?'var(--green)':pct(ventasHoy,dailyTarget)>=60?'var(--gold)':'var(--passion)'};"></div></div>
+        <div class="daily-status" style="color:${pct(ventasHoy,dailyTarget)>=100?'var(--green)':'var(--text-m)'};">${pct(ventasHoy,dailyTarget)>=100?'✓ Meta del día alcanzada':'Faltan $'+(dailyTarget-ventasHoy).toLocaleString('es-MX',{maximumFractionDigits:0})+' · '+pedidosHoy+' pedidos'}</div>
       </div>
       <div class="daily-card">
-        <div class="daily-title">Ventas · mes</div>
+        <div class="daily-title">Ventas · mes <span style="font-size:10px;background:var(--blue-light);color:#1a6a75;padding:1px 6px;border-radius:8px;margin-left:4px;">POS live</span></div>
         <div class="daily-amounts">
-          <div class="daily-current" style="font-size:24px;">$${((ventasGoal?.current_value||0)*30/Math.max(1,new Date().getDate())||0).toLocaleString('es-MX',{maximumFractionDigits:0})}</div>
+          <div class="daily-current" style="font-size:24px;">$${ventasMes.toLocaleString('es-MX',{maximumFractionDigits:0})}</div>
         </div>
-        <div class="daily-bar-wrap"><div class="daily-bar-fill" style="width:${Math.min(100,pct((ventasGoal?.current_value||0)*30/Math.max(1,new Date().getDate()),monthlyTarget))}%;background:var(--blue);"></div></div>
-        <div class="daily-status" style="color:var(--text-m);">Meta mes: $${monthlyTarget.toLocaleString('es-MX')}</div>
+        <div class="daily-bar-wrap"><div class="daily-bar-fill" style="width:${Math.min(100,pct(ventasMes,monthlyTarget))}%;background:var(--blue);"></div></div>
+        <div class="daily-status" style="color:var(--text-m);">Meta: $${monthlyTarget.toLocaleString('es-MX')} · ${pedidosMes} pedidos este mes</div>
       </div>
     </div>
 
@@ -1027,6 +1043,10 @@ function renderLiga(){
               <div style="font-size:10px;font-style:italic;color:var(--text-m);margin-bottom:3px;">Misiones cumplidas</div>
               <div style="font-family:Impact,'Arial Black',sans-serif;font-size:24px;color:var(--grana);">${done}<span style="font-size:14px;color:var(--text-m);">/${total}</span></div>
               <div style="height:6px;background:#f0e0e3;border-radius:3px;overflow:hidden;margin-top:4px;"><div style="height:100%;width:${total?Math.round(done/total*100):0}%;background:${bi===0?'var(--passion)':'var(--blue)'};border-radius:3px;"></div></div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-style:italic;color:var(--text-m);margin-bottom:3px;">Ventas del mes</div>
+              <div style="font-family:Impact,'Arial Black',sans-serif;font-size:18px;color:var(--grana);">$${(S.posData.ventasMes[b]?.total||0).toLocaleString('es-MX',{maximumFractionDigits:0})}</div>
             </div>
             <div>
               <div style="font-size:10px;font-style:italic;color:var(--text-m);margin-bottom:3px;">XP del equipo</div>
