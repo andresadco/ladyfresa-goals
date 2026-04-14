@@ -192,6 +192,35 @@ html,body{height:100%;background:var(--cream);font-family:'Instrument Serif',Geo
 .spinner{width:28px;height:28px;border:3px solid var(--pink);border-top-color:var(--passion);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* PERFIL */
+.perfil-hero{background:var(--grana);border-radius:var(--r);padding:1.5rem;margin-bottom:1rem;display:flex;align-items:center;gap:16px;}
+.perfil-av{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Impact,'Arial Black',sans-serif;font-size:22px;font-weight:900;flex-shrink:0;border:3px solid rgba(255,255,255,.3);}
+.perfil-name{font-family:Impact,'Arial Black',sans-serif;font-size:20px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:.5px;line-height:1;}
+.perfil-role{font-size:12px;font-style:italic;color:rgba(255,255,255,.75);margin-top:3px;}
+.perfil-lv{font-size:12px;font-style:italic;color:var(--pink);margin-top:6px;}
+.perfil-xp-bar{height:6px;background:rgba(255,255,255,.2);border-radius:3px;margin-top:6px;overflow:hidden;width:160px;}
+.perfil-xp-fill{height:100%;border-radius:3px;background:var(--pink);transition:width 1s ease;}
+
+.stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:1rem;}
+.stat-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center;}
+.stat-val{font-family:Impact,'Arial Black',sans-serif;font-size:26px;font-weight:900;color:var(--grana);line-height:1;}
+.stat-label{font-size:11px;font-style:italic;color:var(--text-m);margin-top:4px;}
+
+.badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:1rem;}
+.badge-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center;}
+.badge-card.earned{border-color:var(--gold);background:var(--gold-light);}
+.badge-card.locked{opacity:.45;filter:grayscale(1);}
+.badge-icon{font-size:28px;margin-bottom:6px;}
+.badge-name{font-family:Impact,'Arial Black',sans-serif;font-size:12px;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;}
+.badge-desc{font-size:11px;font-style:italic;color:var(--text-m);}
+.badge-earned-label{font-size:10px;font-style:italic;color:var(--gold);margin-top:5px;font-weight:bold;}
+
+.racha-display{background:white;border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:14px;}
+.racha-num{font-family:Impact,'Arial Black',sans-serif;font-size:48px;font-weight:900;color:var(--passion);line-height:1;min-width:60px;}
+.racha-info{flex:1;}
+.racha-title{font-family:Impact,'Arial Black',sans-serif;font-size:14px;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:.3px;}
+.racha-sub{font-size:12px;font-style:italic;color:var(--text-m);margin-top:3px;}
+
 /* SUGERENCIAS */
 .sug-status{display:inline-block;font-size:10px;font-family:'Instrument Serif',serif;font-style:italic;padding:3px 9px;border-radius:20px;}
 .sug-nueva{background:var(--pink-light);color:var(--grana);}
@@ -535,6 +564,7 @@ function renderApp(){
   const isFresero=!role.can_update_progress&&!role.can_edit_goals;
   const tabs=[
     {id:'dashboard',label:'Dashboard'},
+    {id:'perfil',label:'Mi perfil'},
     {id:'ranking',label:'Ranking'},
     {id:'benefits',label:'Beneficios'},
     {id:'limpieza',label:'Limpieza'},
@@ -563,6 +593,7 @@ function renderApp(){
         S.tab==='limpieza'?renderLimpieza():
         S.tab==='liga'?renderLiga():
         S.tab==='sugerencias'?renderSugerencias():
+        S.tab==='perfil'?renderPerfil():
         renderAdmin()}
     </div>
   </div>`;
@@ -919,7 +950,11 @@ function renderAdmin(){
     </div>`:''}`;
 }
 
-function switchTab(t){S.tab=t;render();}
+function switchTab(t){
+  S.tab=t;
+  if(t==='perfil'){renderPerfil();}
+  else{render();}
+}
 function setBranch(b){S.branch=b;loadLimpiezaHoy().then(render);}
 function logout(){S.loggedIn=false;S.user=null;S.selectedEmp=null;S.limpiezaHoy=null;S.limpieza={piso:false,barra:false,refrigerador:false,bano:false,presentacion_area:false,nota:''};render();}
 
@@ -1128,6 +1163,137 @@ async function saveVentasConfig(branch){
   S.ventasConfig[branch].meta_lunes_jueves=lj;
   S.ventasConfig[branch].meta_viernes_domingo=fds;
   showToast('Metas de '+branch+' actualizadas ✓');
+}
+
+function getBadges(emp, sugs, limpiezaCount, racha){
+  const xp=emp.xp||0;
+  const sugImpl=sugs.filter(s=>s.employee_id===emp.id&&s.status==='implementada').length;
+  const sugTotal=sugs.filter(s=>s.employee_id===emp.id).length;
+  return[
+    {icon:'🍓',name:'Primera fresa',desc:'Completa tu primer turno',earned:xp>0},
+    {icon:'⚡',name:'Cargada de energía',desc:'Alcanza 500 XP',earned:xp>=500},
+    {icon:'👑',name:'Master Fresa',desc:'Alcanza 1200 XP',earned:xp>=1200},
+    {icon:'✨',name:'Impecable',desc:'5 días seguidos de limpieza',earned:racha>=5},
+    {icon:'🏆',name:'Perfecta',desc:'10 días seguidos de limpieza',earned:racha>=10},
+    {icon:'💡',name:'Innovadora',desc:'Envía tu primera sugerencia',earned:sugTotal>=1},
+    {icon:'🌟',name:'Cambia el juego',desc:'Sugerencia implementada',earned:sugImpl>=1},
+    {icon:'🔥',name:'En racha',desc:'3 sugerencias implementadas',earned:sugImpl>=3},
+    {icon:'💰',name:'Vendedora estrella',desc:'Tu equipo cumple meta de ventas',earned:false},
+    {icon:'🎯',name:'Enfocada',desc:'Completa 3 objetivos en un mes',earned:false},
+  ];
+}
+
+async function getRacha(empId, branch){
+  try{
+    const res=await api('lf_limpieza',`select=fecha,aprobado&employee_id=eq.${empId}&order=fecha.desc&limit=60`);
+    if(!Array.isArray(res)||res.length===0)return 0;
+    let racha=0;
+    const today=new Date();
+    for(let i=0;i<res.length;i++){
+      const d=new Date(res[i].fecha);
+      const diff=Math.round((today-d)/(1000*60*60*24));
+      if(diff===i&&res[i].aprobado)racha++;
+      else break;
+    }
+    return racha;
+  }catch(e){return 0;}
+}
+
+async function renderPerfil(){
+  const emp=S.user;
+  const lv=getLevel(emp.xp);
+  const lvPrev=emp.xp-(lv.l>1?[0,0,300,700,1200,2000][lv.l]:0);
+  const lvRange=lv.next-(lv.l>1?[0,0,300,700,1200,2000][lv.l]:0);
+  const lvPct=Math.min(100,Math.round(lvPrev/lvRange*100));
+  const role=getUserRole();
+  const mySugs=S.sugerencias.filter(s=>s.employee_id===emp.id);
+  const sugImpl=mySugs.filter(s=>s.status==='implementada').length;
+  const myBenefits=S.benefits.filter(b=>emp.xp>=b.xp_required);
+  const limpiezaCount=S.sugerencias.filter(s=>s.employee_id===emp.id).length;
+  const racha=await getRacha(emp.id,emp.sucursal);
+  const badges=getBadges(emp,S.sugerencias,limpiezaCount,racha);
+  const earnedBadges=badges.filter(b=>b.earned);
+
+  document.getElementById('root').innerHTML=`<div class="app">
+    <div class="header">
+      <div><div class="logo">Lady Fresa<span class="logo-sub">Team Goals · Est. 2025</span></div></div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="text-align:right;">
+          <div class="user-name">${emp.name.split(' ')[0]}</div>
+          <div class="user-lv">${lv.name} · ${emp.xp} XP</div>
+        </div>
+        <button class="btn-exit" onclick="logout()">Salir</button>
+      </div>
+    </div>
+    <div class="nav">${[
+      {id:'dashboard',label:'Dashboard'},
+      {id:'perfil',label:'Mi perfil'},
+      {id:'ranking',label:'Ranking'},
+      {id:'benefits',label:'Beneficios'},
+      {id:'limpieza',label:'Limpieza'},
+      {id:'sugerencias',label:'Ideas 💡'},
+      ...(role.can_update_progress||role.can_edit_goals?[{id:'liga',label:'Liga'},{id:'admin',label:'Admin'}]:[])
+    ].map(t=>`<button class="nav-btn${S.tab===t.id?' active':''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('')}</div>
+    <div class="content">
+
+      <div class="perfil-hero">
+        <div class="perfil-av" style="background:${AVCOLORS[emp.avatar_index%AVCOLORS.length]}44;color:white;">${getInitials(emp.name)}</div>
+        <div style="flex:1;">
+          <div class="perfil-name">${emp.name}</div>
+          <div class="perfil-role">${role.name||'Fresero'} · ${emp.sucursal}</div>
+          <div class="perfil-lv">Nivel ${lv.l} · ${lv.name}</div>
+          <div class="perfil-xp-bar"><div class="perfil-xp-fill" style="width:${lvPct}%;"></div></div>
+          <div style="font-size:10px;font-style:italic;color:rgba(255,255,255,.6);margin-top:3px;">${emp.xp} / ${lv.next} XP para siguiente nivel</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:Impact,'Arial Black',sans-serif;font-size:32px;font-weight:900;color:white;line-height:1;">${earnedBadges.length}</div>
+          <div style="font-size:11px;font-style:italic;color:rgba(255,255,255,.7);">logros</div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-val">${emp.xp}</div><div class="stat-label">XP total</div></div>
+        <div class="stat-card"><div class="stat-val">${myBenefits.length}</div><div class="stat-label">Beneficios<br/>desbloqueados</div></div>
+        <div class="stat-card"><div class="stat-val">${mySugs.length}</div><div class="stat-label">Ideas<br/>enviadas</div></div>
+      </div>
+
+      <div class="racha-display">
+        <div class="racha-num" style="color:${racha>=5?'var(--green)':racha>=3?'var(--gold)':'var(--passion)'};">${racha}</div>
+        <div class="racha-info">
+          <div class="racha-title">Racha de limpieza</div>
+          <div class="racha-sub">${racha===0?'Sin días registrados aún':racha===1?'1 día aprobado':racha+' días consecutivos aprobados'}</div>
+          ${racha>=5?`<div style="font-size:11px;font-style:italic;color:var(--green);margin-top:4px;">🏆 ¡Logro desbloqueado!</div>`:''}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:Impact,'Arial Black',sans-serif;font-size:13px;color:var(--text-m);">IDEAS</div>
+          <div style="font-family:Impact,'Arial Black',sans-serif;font-size:24px;color:var(--gold);">${sugImpl}</div>
+          <div style="font-size:11px;font-style:italic;color:var(--text-m);">implementadas</div>
+        </div>
+      </div>
+
+      <div style="font-family:Impact,'Arial Black',sans-serif;font-size:13px;color:var(--grana);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Logros</div>
+      <div class="badge-grid">
+        ${badges.map(b=>`<div class="badge-card ${b.earned?'earned':'locked'}">
+          <div class="badge-icon">${b.icon}</div>
+          <div class="badge-name">${b.name}</div>
+          <div class="badge-desc">${b.desc}</div>
+          ${b.earned?`<div class="badge-earned-label">✓ Desbloqueado</div>`:''}
+        </div>`).join('')}
+      </div>
+
+      ${myBenefits.length>0?`
+      <div style="font-family:Impact,'Arial Black',sans-serif;font-size:13px;color:var(--grana);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Beneficios desbloqueados</div>
+      <div class="ben-grid" style="margin-bottom:1.5rem;">
+        ${myBenefits.map(b=>`<div class="ben-card unlocked">
+          <div class="ben-icon">${b.icon}</div>
+          <div class="ben-name">${b.name}</div>
+          <div class="ben-desc">${b.description}</div>
+          <div class="ben-req done">✓ Desbloqueado</div>
+        </div>`).join('')}
+      </div>`:''}
+
+    </div>
+  </div>`;
 }
 
 function renderLiga(){
