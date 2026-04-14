@@ -309,7 +309,7 @@ const AUTO_CATS=['ticket'];
 
 let S={
   loggedIn:false,user:null,tab:'dashboard',branch:'Balbuena',
-  employees:[],roles:[],goals:[],benefits:[],
+  employees:[],roles:[],goals:[],benefits:[],ventasConfig:{},
   posData:{ticket:{}},
   limpieza:{piso:false,barra:false,refrigerador:false,bano:false,presentacion_area:false,nota:''},
   limpiezaHoy:null,selectedEmp:null,
@@ -328,16 +328,19 @@ async function api(table,params='',method='GET',body=null){
 
 async function loadAll(){
   try{
-    const [emps,roles,goals,benefits]=await Promise.all([
+    const [emps,roles,goals,benefits,vcfg]=await Promise.all([
       api('lf_employees','select=*,lf_roles(*)&active=eq.true&order=xp.desc'),
       api('lf_roles','select=*&order=name'),
       api('lf_goals','select=*&active=eq.true&order=created_at'),
       api('lf_benefits','select=*&active=eq.true&order=xp_required'),
+      api('lf_ventas_config','select=*'),
     ]);
     S.employees=Array.isArray(emps)?emps:[];
     S.roles=Array.isArray(roles)?roles:[];
     S.goals=Array.isArray(goals)?goals:[];
     S.benefits=Array.isArray(benefits)?benefits:[];
+    S.ventasConfig={};
+    if(Array.isArray(vcfg))vcfg.forEach(r=>{S.ventasConfig[r.sucursal]=r;});
     await loadPOSData();
   }catch(e){console.error('loadAll error:',e);}
 }
@@ -422,6 +425,8 @@ function doLogin(){
   if(!emp)return;
   if(pin===emp.pin){
     S.loggedIn=true;S.user=emp;
+    // auto-set branch to employee's sucursal
+    if(emp.sucursal&&emp.sucursal!=='Global')S.branch=emp.sucursal;
     loadLimpiezaHoy().then(()=>{
       showToast('¡Bienvenid@, '+emp.name.split(' ')[0]+'! 🍓');
       render();
@@ -435,13 +440,17 @@ function doLogin(){
 function renderApp(){
   const role=getUserRole();
   const lv=getLevel(S.user.xp);
+  const isFresero=!role.can_update_progress&&!role.can_edit_goals;
   const tabs=[
     {id:'dashboard',label:'Dashboard'},
     {id:'ranking',label:'Ranking'},
     {id:'benefits',label:'Beneficios'},
     {id:'limpieza',label:'Limpieza'},
   ];
-  if(role.can_update_progress||role.can_edit_goals)tabs.push({id:'admin',label:'Admin'});
+  if(role.can_update_progress||role.can_edit_goals){
+    tabs.push({id:'liga',label:'Liga'});
+    tabs.push({id:'admin',label:'Admin'});
+  }
   return`<div class="app">
     <div class="header">
       <div><div class="logo">Lady Fresa<span class="logo-sub">Team Goals · Est. 2025</span></div></div>
@@ -459,25 +468,32 @@ function renderApp(){
         S.tab==='ranking'?renderRanking():
         S.tab==='benefits'?renderBenefits():
         S.tab==='limpieza'?renderLimpieza():
+        S.tab==='liga'?renderLiga():
         renderAdmin()}
     </div>
   </div>`;
 }
 
-function getDailyTarget(){
+function getDailyTarget(branch){
+  const cfg=S.ventasConfig[branch||S.branch]||{meta_lunes_jueves:10000,meta_viernes_domingo:14000};
   const day=new Date().getDay();
-  return (day===5||day===6||day===0)?14000:10000;
+  return (day===5||day===6||day===0)?Number(cfg.meta_viernes_domingo):Number(cfg.meta_lunes_jueves);
 }
-function getMonthlyTarget(){
+function getMonthlyTarget(branch){
+  const cfg=S.ventasConfig[branch||S.branch]||{meta_lunes_jueves:10000,meta_viernes_domingo:14000};
+  const lj=Number(cfg.meta_lunes_jueves);
+  const fds=Number(cfg.meta_viernes_domingo);
   const now=new Date();
   const days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
   let total=0;
-  for(let d=1;d<=days;d++){const wd=new Date(now.getFullYear(),now.getMonth(),d).getDay();total+=(wd===5||wd===6||wd===0)?14000:10000;}
+  for(let d=1;d<=days;d++){const wd=new Date(now.getFullYear(),now.getMonth(),d).getDay();total+=(wd===5||wd===6||wd===0)?fds:lj;}
   return total;
 }
 function getDayName(){const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];return days[new Date().getDay()];}
 
 function renderDashboard(){
+  const role=getUserRole();
+  const isFresero=!role.can_update_progress&&!role.can_edit_goals;
   const branchGoals=S.goals.filter(g=>g.sucursal===S.branch);
   const posTicket=S.posData.ticket[S.branch]?.avg||0;
   const goalsWithAuto=branchGoals.map(g=>g.category==='ticket'?{...g,current_value:posTicket}:g);
@@ -497,10 +513,10 @@ function renderDashboard(){
   const segsOn=Math.round(energyPct/10);
 
   return`
-    <div class="branch-row">
+    ${!isFresero?`<div class="branch-row">
       <button class="branch-tab${S.branch==='Balbuena'?' active':''}" onclick="setBranch('Balbuena')">Balbuena</button>
       <button class="branch-tab${S.branch==='Moctezuma'?' active':''}" onclick="setBranch('Moctezuma')">Moctezuma</button>
-    </div>
+    </div>`:''}
 
     <div class="game-header">
       <div>
@@ -745,6 +761,20 @@ function renderAdmin(){
     </div>`:''}
     ${role.can_edit_employees?`
     <div class="admin-card">
+      <div class="admin-title">Metas de ventas por tienda</div>
+      ${['Balbuena','Moctezuma'].map(b=>{
+        const cfg=S.ventasConfig[b]||{meta_lunes_jueves:10000,meta_viernes_domingo:14000};
+        return`<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="font-family:Impact,'Arial Black',sans-serif;font-size:13px;color:var(--grana);text-transform:uppercase;margin-bottom:8px;">${b}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div><label class="flabel">Lun–Jue</label><input class="finput" id="vcfg-lj-${b}" type="number" value="${cfg.meta_lunes_jueves}"/></div>
+            <div><label class="flabel">Vie–Dom</label><input class="finput" id="vcfg-fds-${b}" type="number" value="${cfg.meta_viernes_domingo}"/></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="saveVentasConfig('${b}')">Guardar ${b}</button>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="admin-card">
       <div class="admin-title">Empleados <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ Agregar</button></div>
       ${S.employees.map(e=>`
         <div class="row-item">
@@ -962,6 +992,80 @@ async function saveRole(){
   if(Array.isArray(created)&&created[0])S.roles.push(created[0]);
   closeModal('modal-role');showToast('Rol creado ✓');
   document.getElementById('r-name').value='';render();
+}
+
+async function saveVentasConfig(branch){
+  const lj=parseFloat(document.getElementById('vcfg-lj-'+branch)?.value)||10000;
+  const fds=parseFloat(document.getElementById('vcfg-fds-'+branch)?.value)||14000;
+  await api('lf_ventas_config',`sucursal=eq.${branch}`,'PATCH',{meta_lunes_jueves:lj,meta_viernes_domingo:fds,updated_at:new Date().toISOString()});
+  if(!S.ventasConfig[branch])S.ventasConfig[branch]={};
+  S.ventasConfig[branch].meta_lunes_jueves=lj;
+  S.ventasConfig[branch].meta_viernes_domingo=fds;
+  showToast('Metas de '+branch+' actualizadas ✓');
+}
+
+function renderLiga(){
+  const branches=['Balbuena','Moctezuma'];
+  return`
+    <div class="sec-title">Liga Lady Fresa</div>
+    <div class="sec-sub">Competencia entre sucursales · ${new Date().toLocaleDateString('es-MX',{month:'long',year:'numeric'})}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;">
+      ${branches.map((b,bi)=>{
+        const bGoals=S.goals.filter(g=>g.sucursal===b);
+        const done=bGoals.filter(g=>pct(g.current_value,g.target)>=100).length;
+        const total=bGoals.length;
+        const avgP=total?Math.round(bGoals.reduce((a,g)=>a+pct(g.current_value,g.target),0)/total):0;
+        const teamXP=S.employees.filter(e=>e.sucursal===b).reduce((a,e)=>a+e.xp,0);
+        const ventasG=bGoals.find(g=>g.category==='ventas');
+        const mTarget=getMonthlyTarget(b);
+        const isWinning=bi===0?avgP>=( ()=>{const og=S.goals.filter(g=>g.sucursal==='Moctezuma');return og.length?Math.round(og.reduce((a,g)=>a+pct(g.current_value,g.target),0)/og.length):0;})():false;
+        return`<div style="background:white;border:${b===S.branch?'2px solid var(--passion)':'1px solid var(--border)'};border-radius:var(--r);padding:1rem;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${bi===0?'var(--passion)':'var(--blue)'};"></div>
+          <div style="font-family:Impact,'Arial Black',sans-serif;font-size:16px;font-weight:900;color:var(--grana);text-transform:uppercase;margin-bottom:12px;margin-top:4px;">${b}</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div>
+              <div style="font-size:10px;font-style:italic;color:var(--text-m);margin-bottom:3px;">Misiones cumplidas</div>
+              <div style="font-family:Impact,'Arial Black',sans-serif;font-size:24px;color:var(--grana);">${done}<span style="font-size:14px;color:var(--text-m);">/${total}</span></div>
+              <div style="height:6px;background:#f0e0e3;border-radius:3px;overflow:hidden;margin-top:4px;"><div style="height:100%;width:${total?Math.round(done/total*100):0}%;background:${bi===0?'var(--passion)':'var(--blue)'};border-radius:3px;"></div></div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-style:italic;color:var(--text-m);margin-bottom:3px;">XP del equipo</div>
+              <div style="font-family:Impact,'Arial Black',sans-serif;font-size:20px;color:var(--gold);">⚡${teamXP}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-style:italic;color:var(--text-m);margin-bottom:3px;">Avance promedio</div>
+              <div style="font-family:Impact,'Arial Black',sans-serif;font-size:20px;color:${avgP>=80?'var(--green)':avgP>=50?'var(--gold)':'var(--passion)'};">${avgP}%</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="background:white;border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem;">
+      <div style="font-family:Impact,'Arial Black',sans-serif;font-size:13px;color:var(--grana);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1rem;">Objetivo por objetivo</div>
+      ${['reseñas','seguidores','contenido','limpieza','upselling','atencion'].map(cat=>{
+        const bG=S.goals.find(g=>g.sucursal==='Balbuena'&&g.category===cat);
+        const mG=S.goals.find(g=>g.sucursal==='Moctezuma'&&g.category===cat);
+        if(!bG&&!mG)return'';
+        const bp=bG?pct(bG.current_value,bG.target):0;
+        const mp=mG?pct(mG.current_value,mG.target):0;
+        const bWins=bp>mp;
+        return`<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="font-size:14px;">${CAT_ICON[cat]||'🎯'}</span>
+            <span style="font-family:Impact,'Arial Black',sans-serif;font-size:12px;color:var(--text);text-transform:uppercase;">${bG?.name||mG?.name||cat}</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:11px;font-style:italic;min-width:70px;color:var(--grana);font-weight:${bWins?'bold':'normal'};">Balbuena ${bp}%${bWins?' 👑':''}</span>
+            <div style="flex:1;display:flex;gap:3px;height:8px;">
+              <div style="flex:1;background:#f0e0e3;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${bp}%;background:var(--passion);border-radius:3px;"></div></div>
+              <div style="flex:1;background:#f0e0e3;border-radius:3px;overflow:hidden;direction:rtl;"><div style="height:100%;width:${mp}%;background:var(--blue);border-radius:3px;"></div></div>
+            </div>
+            <span style="font-size:11px;font-style:italic;min-width:75px;text-align:right;color:#1a6a75;font-weight:${mp>bp?'bold':'normal'};">${mp>bp?'👑 ':''}Moctezuma ${mp}%</span>
+          </div>
+        </div>`;
+      }).filter(Boolean).join('')}
+    </div>`;
 }
 
 // Boot
