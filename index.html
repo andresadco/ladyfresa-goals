@@ -287,6 +287,18 @@ html,body{height:100%;background:var(--cream);font-family:'Instrument Serif',Geo
   </div>
 </div>
 
+<!-- Modal beneficio (agregar / editar) -->
+<div class="modal-bg" id="modal-benefit">
+  <div class="modal">
+    <div class="modal-title" id="modal-benefit-title">Nuevo beneficio</div>
+    <input type="hidden" id="b-id"/>
+    <div class="frow full"><div><label class="flabel">Nombre</label><input class="finput" id="b-name" placeholder="ej. Tarde libre"/></div></div>
+    <div class="frow full"><div><label class="flabel">Descripción</label><input class="finput" id="b-desc" placeholder="ej. Salir 2h antes un viernes"/></div></div>
+    <div class="frow"><div><label class="flabel">Ícono (emoji)</label><input class="finput" id="b-icon" placeholder="🎁" maxlength="4"/></div><div><label class="flabel">XP requerido</label><input class="finput" id="b-xp" type="number" placeholder="500"/></div></div>
+    <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-benefit')">Cancelar</button><button class="btn btn-primary btn-sm" id="modal-benefit-btn" onclick="saveBenefit()">Guardar</button></div>
+  </div>
+</div>
+
 <!-- Modal rol -->
 <div class="modal-bg" id="modal-role">
   <div class="modal">
@@ -820,6 +832,22 @@ function renderAdmin(){
             <div class="row-meta">${[r.can_edit_goals?'Edita objetivos':'',r.can_edit_employees?'Edita empleados':'',r.can_update_progress?'Actualiza progreso':''].filter(Boolean).join(' · ')||'Solo consulta'}</div>
           </div>
         </div>`).join('')}
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-title">Beneficios <button class="btn btn-primary btn-sm" onclick="openAddBenefitModal()">+ Nuevo</button></div>
+      ${S.benefits.map(b=>`
+        <div class="row-item">
+          <span style="font-size:20px;min-width:28px;">${b.icon}</span>
+          <div class="row-info">
+            <div class="row-name">${b.name}</div>
+            <div class="row-meta">${b.description} · ${b.xp_required} XP</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="openEditBenefitModal('${b.id}')">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteBenefit('${b.id}')">✕</button>
+          </div>
+        </div>`).join('')||'<div class="empty">Sin beneficios</div>'}
     </div>`:''}`;
 }
 
@@ -1100,6 +1128,66 @@ function renderLiga(){
         </div>`;
       }).filter(Boolean).join('')}
     </div>`;
+}
+
+function openAddBenefitModal(){
+  document.getElementById('modal-benefit-title').textContent='Nuevo beneficio';
+  document.getElementById('modal-benefit-btn').textContent='Guardar';
+  document.getElementById('modal-benefit-btn').onclick=saveBenefit;
+  document.getElementById('b-id').value='';
+  document.getElementById('b-name').value='';
+  document.getElementById('b-desc').value='';
+  document.getElementById('b-icon').value='🎁';
+  document.getElementById('b-xp').value='500';
+  openModal('modal-benefit');
+}
+
+function openEditBenefitModal(id){
+  const b=S.benefits.find(b=>b.id===id);
+  if(!b)return;
+  document.getElementById('modal-benefit-title').textContent='Editar beneficio';
+  document.getElementById('modal-benefit-btn').textContent='Guardar cambios';
+  document.getElementById('modal-benefit-btn').onclick=updateBenefit;
+  document.getElementById('b-id').value=b.id;
+  document.getElementById('b-name').value=b.name;
+  document.getElementById('b-desc').value=b.description||'';
+  document.getElementById('b-icon').value=b.icon||'🎁';
+  document.getElementById('b-xp').value=b.xp_required;
+  openModal('modal-benefit');
+}
+
+async function saveBenefit(){
+  const name=document.getElementById('b-name').value.trim();
+  const description=document.getElementById('b-desc').value.trim();
+  const icon=document.getElementById('b-icon').value.trim()||'🎁';
+  const xp_required=parseInt(document.getElementById('b-xp').value)||500;
+  if(!name){showToast('Escribe el nombre');return;}
+  const body={name,description,icon,xp_required,active:true};
+  const created=await api('lf_benefits','select=*','POST',body);
+  if(Array.isArray(created)&&created[0])S.benefits.push(created[0]);
+  S.benefits.sort((a,b)=>a.xp_required-b.xp_required);
+  closeModal('modal-benefit');showToast('Beneficio agregado ✓');render();
+}
+
+async function updateBenefit(){
+  const id=document.getElementById('b-id').value;
+  const name=document.getElementById('b-name').value.trim();
+  const description=document.getElementById('b-desc').value.trim();
+  const icon=document.getElementById('b-icon').value.trim()||'🎁';
+  const xp_required=parseInt(document.getElementById('b-xp').value)||500;
+  if(!name){showToast('Escribe el nombre');return;}
+  await api('lf_benefits',`id=eq.${id}`,'PATCH',{name,description,icon,xp_required});
+  const b=S.benefits.find(b=>b.id===id);
+  if(b){b.name=name;b.description=description;b.icon=icon;b.xp_required=xp_required;}
+  S.benefits.sort((a,b)=>a.xp_required-b.xp_required);
+  closeModal('modal-benefit');showToast('Beneficio actualizado ✓');render();
+}
+
+async function deleteBenefit(id){
+  if(!confirm('¿Eliminar este beneficio?'))return;
+  await api('lf_benefits',`id=eq.${id}`,'PATCH',{active:false});
+  S.benefits=S.benefits.filter(b=>b.id!==id);
+  showToast('Beneficio eliminado');render();
 }
 
 // Boot
